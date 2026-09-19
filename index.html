@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripCraft — Intelligent Travel Planning Studio</title>
+  <meta name="description"
+    content="TripCraft is a personalized, multilingual travel planner that crafts organized itineraries with weather adaptation, accessibility flags, and local food discovery.">
+
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- App Wrapper -->
+  <div class="app-layout">
+
+    <!-- Header / Navbar -->
+    <header class="navbar">
+      <div class="nav-brand-group">
+        <div class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+            </svg>
+          </div>
+          <div class="brand-headings">
+            <span class="brand-title">Trip<span class="gradient-text">Craft</span></span>
+            <span class="brand-tagline" data-i18n="tagline">Personal Travel Planner</span>
+          </div>
+        </div>
+
+        <!-- Current Trip Switcher -->
+        <div class="trip-quick-selector">
+          <label for="tripSelect" class="sr-only" data-i18n="selectTrip">Select Trip</label>
+          <div class="select-pill-wrapper">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <select id="tripSelect" class="trip-dropdown" aria-label="Select Trip">
+              <!-- Populated via JavaScript -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav Controls -->
+      <div class="nav-controls">
+        <!-- New Trip CTA Button -->
+        <button id="btnNewTrip" class="btn btn-primary" type="button">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span data-i18n="navNewTrip">Plan New Trip</span>
+        </button>
+
+        <!-- Language Selector -->
+        <div class="dropdown-control">
+          <label for="langSelect" class="sr-only">Language</label>
+          <div class="select-pill-wrapper">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <select id="langSelect" class="icon-dropdown" aria-label="Select Language">
+              <option value="en">English (EN)</option>
+              <option value="ar">العربية (AR)</option>
+              <option value="es">Español (ES)</option>
+              <option value="fr">Français (FR)</option>
+              <option value="ja">日本語 (JA)</option>
+              <option value="de">Deutsch (DE)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Currency Selector -->
+        <div class="dropdown-control">
+          <label for="currencySelect" class="sr-only">Currency</label>
+          <div class="select-pill-wrapper">
+            <span class="currency-badge" id="currencySymbolBadge">$</span>
+            <select id="currencySelect" class="icon-dropdown" aria-label="Select Currency">
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+              <option value="SAR">SAR (ر.س)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Toggle Dark/Light Mode"
+          title="Toggle Theme">
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Trip Banner & Overview -->
+    <section class="trip-hero-section">
+      <div class="hero-image-backdrop" id="heroBackdrop"></div>
+      <div class="hero-glass-overlay">
+        <div class="hero-content">
+          <div class="hero-badges-row">
+            <span class="badge badge-primary" id="heroTripType">Family Vacation</span>
+            <span class="badge badge-accent" id="heroDuration">5 Days</span>
+            <span class="badge badge-weather" id="heroWeatherBadge">
+              <span class="weather-icon">☀️</span>
+              <span id="heroWeatherText">24°C • Weather Optimized</span>
+            </span>
+          </div>
+
+          <h1 class="hero-destination-title" id="heroTitle">Tokyo Neon & Heritage</h1>
+          <p class="hero-description" id="heroSubtitle">A personalized voyage balancing vibrant pop-culture districts,
+            historic Shinto shrines, and serene imperial gardens.</p>
+
+          <!-- Quick Metrics Matrix -->
+          <div class="hero-metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelTravelers">Travelers</span>
+                <span class="metric-value" id="metricTravelers">4 People (2 Adults, 2 Kids)</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelStay">Recommended Stay</span>
+                <span class="metric-value" id="metricStay">Mimaru Tokyo Asakusa Station</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelBudget">Est. Daily Spending</span>
+                <span class="metric-value" id="metricDailySpend">$320 / day</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelNeighborhood">Current District</span>
+                <span class="metric-value" id="metricNeighborhood">Asakusa & Ueno</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="app-tab-navigation" aria-label="Trip Views">
+      <div class="tab-list-container">
+        <button class="tab-btn active" data-tab="itinerary" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span data-i18n="tabItinerary">Day-by-Day Itinerary</span>
+        </button>
+
+        <button class="tab-btn" data-tab="stays" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span data-i18n="tabStays">Recommended Stays</span>
+        </button>
+
+        <button class="tab-btn" data-tab="budget" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          <span data-i18n="tabBudget">Cost Estimates & Budget</span>
+        </button>
+
+        <button class="tab-btn" data-tab="customize" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span data-i18n="tabCustomize">Modify & Customize</span>
+        </button>
+
+        <button class="tab-btn" data-tab="packing" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+          </svg>
+          <span data-i18n="tabPacking">Packing Checklist</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Workspace Content -->
+    <main class="main-content">
+
+      <!-- ================= TAB 1: ITINERARY ================= -->
+      <section id="tabViewItinerary" class="tab-content-panel active">
+        <!-- Day Selector Header -->
+        <div class="itinerary-header-bar">
+          <div class="day-pills-scroller" id="dayPillsContainer">
+            <!-- Day pills populated via JS -->
+          </div>
+
+          <div class="itinerary-action-tools">
+            <button id="btnAdjustPaceHeader" class="btn btn-secondary btn-sm" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span data-i18n="btnAdjustPace">Adjust Pace</span>
+            </button>
+            <button id="btnPrintItinerary" class="btn btn-secondary btn-sm" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              <span data-i18n="btnPrint">Print / PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Day Info Banner (Geographic neighborhood & Weather adaptation) -->
+        <div class="day-context-banner" id="dayContextBanner">
+          <div class="context-group">
+            <div class="context-icon-wrap geo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div class="context-text">
+              <div class="context-title" data-i18n="labelNeighborhoodCluster">Geographic Neighborhood Cluster</div>
+              <div class="context-value" id="dayNeighborhoodText">Asakusa, Sensoji & Sumida Riverfront</div>
+              <span class="context-subtext" data-i18n="transitOptimizedSubtext">Activities grouped within 1.2km to
+                minimize walking and transit time for families.</span>
+            </div>
+          </div>
+
+          <div class="context-group">
+            <div class="context-icon-wrap weather">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+            </div>
+            <div class="context-text">
+              <div class="context-title" data-i18n="labelWeatherAdaptation">Weather Adaptation Plan</div>
+              <div class="context-value" id="dayWeatherAdaptationText">☀️ Cool morning outdoor temple visits; midday
+                air-conditioned arcade/museum; sunset river breeze walk.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Timeline Blocks -->
+        <div class="timeline-blocks-wrapper" id="timelineCardsContainer">
+          <!-- Populated by renderItinerary() -->
+        </div>
+
+        <!-- Bottom Options / Request Changes Section -->
+        <div class="itinerary-footer-card">
+          <div class="footer-card-header">
+            <div class="footer-card-title-group">
+              <h3 data-i18n="customizePlanTitle">Customize or Fine-Tune This Day</h3>
+              <p data-i18n="customizePlanSubtitle">Easily swap an activity, change a food recommendation, adjust pacing,
+                or request direct booking guidance.</p>
+            </div>
+          </div>
+          <div class="footer-actions-grid">
+            <button class="action-card-btn" id="btnQuickSwapActivity" type="button">
+              <div class="action-btn-icon">🔄</div>
+              <div class="action-btn-text">
+                <strong data-i18n="actionSwapActivity">Swap an Activity</strong>
+                <span data-i18n="actionSwapActivityDesc">Browse curated alternate sights in this district</span>
+              </div>
+            </button>
+
+            <button class="action-card-btn" id="btnQuickSwapDining" type="button">
+              <div class="action-btn-icon">🍜</div>
+              <div class="action-btn-text">
+                <strong data-i18n="actionChangeRestaurant">Change Restaurant</strong>
+                <span data-i18n="actionChangeRestaurantDesc">Pick vegetarian, halal, or child-friendly local
+                  eateries</span>
+              </div>
+            </button>
+
+            <button class="action-card-btn" id="btnQuickAdjustPace" type="button">
+              <div class="action-btn-icon">⏳</div>
+              <div class="action-btn-text">
+                <strong data-i18n="actionAdjustPace">Adjust Daily Pace</strong>
+                <span data-i18n="actionAdjustPaceDesc">Switch between Relaxed, Balanced, and Fast-Paced</span>
+              </div>
+            </button>
+
+            <button class="action-card-btn" id="btnQuickBookingGuide" type="button">
+              <div class="action-btn-icon">🎟️</div>
+              <div class="action-btn-text">
+                <strong data-i18n="actionBookingGuide">Booking Guidance & Links</strong>
+                <span data-i18n="actionBookingGuideDesc">Official entry passes, transit cards & reservations</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: RECOMMENDED STAYS ================= -->
+      <section id="tabViewStays" class="tab-content-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" data-i18n="staysHeaderTitle">Recommended Places to Stay</h2>
+            <p class="panel-subtitle" data-i18n="staysHeaderSubtitle">Curated accommodations tailored to your group
+              size, traveler ages, accessibility needs, and budget preference.</p>
+          </div>
+          <div class="stays-filter-pill-bar">
+            <span class="filter-label" data-i18n="filterBy">Filter by:</span>
+            <button class="pill-btn active" data-stay-filter="all" type="button" data-i18n="filterAll">All
+              Recommendations</button>
+            <button class="pill-btn" data-stay-filter="family" type="button" data-i18n="filterFamilySuites">Family
+              Suites</button>
+            <button class="pill-btn" data-stay-filter="accessible" type="button" data-i18n="filterAccessible">Wheelchair
+              / Stroller Ready</button>
+            <button class="pill-btn" data-stay-filter="central" type="button" data-i18n="filterCentral">Transit
+              Centric</button>
+          </div>
+        </div>
+
+        <div class="stays-grid" id="staysContainer">
+          <!-- Populated by renderStays() -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: BUDGET & COST ESTIMATES ================= -->
+      <section id="tabViewBudget" class="tab-content-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" data-i18n="budgetHeaderTitle">Cost Estimates & Budget Planning</h2>
+            <p class="panel-subtitle" data-i18n="budgetHeaderSubtitle">Clear cost breakdowns for accommodations, local
+              food, entry admissions, and neighborhood transit.</p>
+          </div>
+          <div class="budget-preference-badge">
+            <span data-i18n="budgetTierLabel">Budget Tier:</span>
+            <strong id="budgetTierName">Moderate / Balanced Comfort</strong>
+          </div>
+        </div>
+
+        <!-- Budget Stats Overview Cards -->
+        <div class="budget-kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-label" data-i18n="totalEstTripCost">Total Estimated Trip Cost</span>
+            <div class="kpi-number" id="budgetTotalCost">$2,250</div>
+            <span class="kpi-caption" id="budgetTotalCaption">For 4 travelers over 5 days</span>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label" data-i18n="dailySpendAverage">Average Daily Spend</span>
+            <div class="kpi-number" id="budgetDailyAvg">$450</div>
+            <span class="kpi-caption" data-i18n="includesAllExpenses">Includes lodging, dining, transit & tickets</span>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label" data-i18n="perPersonEstimate">Per Person Estimate</span>
+            <div class="kpi-number" id="budgetPerPerson">$562.50</div>
+            <span class="kpi-caption" data-i18n="perTravelerTotal">All-inclusive per traveler estimate</span>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label" data-i18n="budgetStatus">Budget Health</span>
+            <div class="kpi-number text-success" id="budgetHealthStatus" data-i18n="onTrack">On Track</div>
+            <span class="kpi-caption" data-i18n="alignedWithTier">Aligned with your selected comfort tier</span>
+          </div>
+        </div>
+
+        <!-- Expense Category Distribution Bar -->
+        <div class="card expense-breakdown-card">
+          <h3 class="card-title" data-i18n="categoryBreakdownTitle">Expense Category Breakdown</h3>
+          <div class="progress-bar-segmented" id="budgetProgressBar">
+            <div class="seg seg-lodging" style="width: 45%;" title="Lodging: 45%"></div>
+            <div class="seg seg-dining" style="width: 30%;" title="Dining & Food: 30%"></div>
+            <div class="seg seg-tickets" style="width: 15%;" title="Attractions & Entry: 15%"></div>
+            <div class="seg seg-transit" style="width: 10%;" title="Transit & Transfers: 10%"></div>
+          </div>
+          <div class="expense-legend-row">
+            <span class="legend-item"><span class="dot lodging"></span> <span data-i18n="catLodging">Lodging</span>
+              (<strong id="costLodgingPct">45%</strong>)</span>
+            <span class="legend-item"><span class="dot dining"></span> <span data-i18n="catDining">Local Dining</span>
+              (<strong id="costDiningPct">30%</strong>)</span>
+            <span class="legend-item"><span class="dot tickets"></span> <span data-i18n="catTickets">Attractions &
+                Entry</span> (<strong id="costTicketsPct">15%</strong>)</span>
+            <span class="legend-item"><span class="dot transit"></span> <span data-i18n="catTransit">Neighborhood
+                Transit</span> (<strong id="costTransitPct">10%</strong>)</span>
+          </div>
+        </div>
+
+        <!-- Day-by-Day Cost Table -->
+        <div class="card table-card">
+          <h3 class="card-title" data-i18n="dailyCostBreakdownTitle">Daily Spending Breakdown</h3>
+          <div class="table-responsive">
+            <table class="cost-table">
+              <thead>
+                <tr>
+                  <th data-i18n="thDay">Day</th>
+                  <th data-i18n="thNeighborhood">Neighborhood Cluster</th>
+                  <th data-i18n="thMeals">Meals & Street Food</th>
+                  <th data-i18n="thTickets">Attractions & Entries</th>
+                  <th data-i18n="thTransit">Transit</th>
+                  <th data-i18n="thDailyTotal">Daily Total</th>
+                </tr>
+              </thead>
+              <tbody id="dailyCostTableBody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: MODIFY & CUSTOMIZE ================= -->
+      <section id="tabViewCustomize" class="tab-content-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" data-i18n="customizeHeaderTitle">TripCraft Customization Studio</h2>
+            <p class="panel-subtitle" data-i18n="customizeHeaderSubtitle">Modify your itinerary to suit your changing
+              energy levels, dietary desires, and travel tempo.</p>
+          </div>
+        </div>
+
+        <div class="customization-columns">
+          <!-- Column 1: Pace Control -->
+          <div class="card pace-selector-card">
+            <h3 class="card-title" data-i18n="paceControlTitle">Daily Pace & Tempo</h3>
+            <p class="card-subtitle" data-i18n="paceControlSubtitle">Adapt the itinerary density to fit family stamina
+              and personal travel philosophy.</p>
+
+            <div class="pace-options-list">
+              <label class="pace-option-card">
+                <input type="radio" name="tripPace" value="relaxed" id="paceRelaxed">
+                <div class="pace-card-content">
+                  <div class="pace-header">
+                    <span class="pace-name" data-i18n="paceRelaxedName">🌿 Relaxed & Unhurried</span>
+                    <span class="pace-tag" data-i18n="paceRelaxedTag">Family & Seniors</span>
+                  </div>
+                  <p class="pace-description" data-i18n="paceRelaxedDesc">Late mornings, maximum 2 activities per day,
+                    generous cafe breaks, and early dinners.</p>
+                </div>
+              </label>
+
+              <label class="pace-option-card active">
+                <input type="radio" name="tripPace" value="balanced" id="paceBalanced" checked>
+                <div class="pace-card-content">
+                  <div class="pace-header">
+                    <span class="pace-name" data-i18n="paceBalancedName">⚖️ Balanced & Curated</span>
+                    <span class="pace-tag" data-i18n="paceBalancedTag">Recommended</span>
+                  </div>
+                  <p class="pace-description" data-i18n="paceBalancedDesc">Structured morning and afternoon exploration
+                    with flexible evenings and neighborhood grouping.</p>
+                </div>
+              </label>
+
+              <label class="pace-option-card">
+                <input type="radio" name="tripPace" value="packed" id="pacePacked">
+                <div class="pace-card-content">
+                  <div class="pace-header">
+                    <span class="pace-name" data-i18n="pacePackedName">⚡ Fast-Paced & Immersive</span>
+                    <span class="pace-tag" data-i18n="pacePackedTag">Active Explorers</span>
+                  </div>
+                  <p class="pace-description" data-i18n="pacePackedDesc">Early start, 4-5 major sights, night tours, and
+                    maximized discovery for high energy travelers.</p>
+                </div>
+              </label>
+            </div>
+
+            <button id="btnApplyPace" class="btn btn-primary btn-block" type="button" data-i18n="btnApplyPace">Apply
+              Pace to Itinerary</button>
+          </div>
+
+          <!-- Column 2: Activity & Dining Quick Swap -->
+          <div class="card swap-console-card">
+            <h3 class="card-title" data-i18n="swapConsoleTitle">Swap Activities or Dining Spots</h3>
+            <p class="card-subtitle" data-i18n="swapConsoleSubtitle">Select any day slot to view instant smart
+              alternatives in the same neighborhood cluster.</p>
+
+            <div class="form-group">
+              <label for="swapDaySelect" class="form-label" data-i18n="labelTargetDay">Select Day to Modify</label>
+              <select id="swapDaySelect" class="form-input">
+                <!-- Filled dynamically -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="swapSlotSelect" class="form-label" data-i18n="labelTimeSlot">Time Block to Swap</label>
+              <select id="swapSlotSelect" class="form-input">
+                <option value="morning" data-i18n="slotMorning">Morning Activity</option>
+                <option value="lunch" data-i18n="slotLunch">Lunch & Local Food Spot</option>
+                <option value="afternoon" data-i18n="slotAfternoon">Afternoon Activity</option>
+                <option value="evening" data-i18n="slotEvening">Evening Activity & Dinner</option>
+              </select>
+            </div>
+
+            <div class="alternatives-wrapper">
+              <label class="form-label" data-i18n="labelCuratedAlternates">Curated Alternatives for Selected
+                Slot:</label>
+              <div class="alternates-list" id="swapAlternatesContainer">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Direct Booking Guidance & Official Links -->
+        <div class="card booking-guidance-section">
+          <h3 class="card-title" data-i18n="bookingGuidanceTitle">Direct Booking Guidance & Official Links</h3>
+          <p class="card-subtitle" data-i18n="bookingGuidanceSubtitle">Avoid overpriced third-party reseller markups
+            with TripCraft's official reservation portals and passes.</p>
+
+          <div class="booking-links-grid" id="bookingLinksGrid">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: PACKING CHECKLIST ================= -->
+      <section id="tabViewPacking" class="tab-content-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" data-i18n="packingHeaderTitle">Smart Packing & Travel Preparation</h2>
+            <p class="panel-subtitle" data-i18n="packingHeaderSubtitle">Checklist tailored to your destination's
+              seasonal weather, group age composition, and activity types.</p>
+          </div>
+          <div class="packing-progress-indicator">
+            <span class="packing-pct-label"><span id="packingCountText">0 / 0</span> <span
+                data-i18n="packed">Packed</span> (<span id="packingPctText">0%</span>)</span>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill" id="packingProgressBar" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="packing-sections-grid" id="packingCardsGrid">
+          <!-- Populated by renderPacking() -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <strong>TripCraft Intelligent Planner</strong> — <span data-i18n="footerText">Crafting personalized,
+            weather-adaptive journeys worldwide.</span>
+        </div>
+        <div class="footer-meta">
+          <span data-i18n="footerLangSupport">Compatible with all languages • Family & Accessibility Centered</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ================= MODAL: PLAN A NEW TRIP ================= -->
+  <div class="modal-backdrop" id="modalNewTrip" role="dialog" aria-modal="true" aria-labelledby="modalNewTripTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="brand-icon-wrapper sm">
+            <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+            </svg>
+          </div>
+          <h2 class="modal-title" id="modalNewTripTitle" data-i18n="modalNewTripTitle">Plan a New Personalized Journey
+          </h2>
+        </div>
+        <button class="modal-close-btn" id="btnCloseNewTripModal" type="button"
+          aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="formNewTrip" class="modal-body-form">
+        <!-- Step 1: Destination -->
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="inputDestination" class="form-label" data-i18n="formLabelDestination">Destination City & Country
+              *</label>
+            <input type="text" id="inputDestination" class="form-input" placeholder="e.g. Paris, France or Tokyo, Japan"
+              required>
+          </div>
+          <div class="form-group">
+            <label for="inputDuration" class="form-label" data-i18n="formLabelDuration">Duration (Days) *</label>
+            <input type="number" id="inputDuration" class="form-input" min="1" max="14" value="5" required>
+          </div>
+        </div>
+
+        <!-- Step 2: Who is traveling -->
+        <div class="form-section-title" data-i18n="formSectionTravelers">Who is traveling? (Group size & age breakdown)
+        </div>
+        <div class="form-row three-col">
+          <div class="form-group">
+            <label for="inputAdults" class="form-label" data-i18n="formLabelAdults">Adults (Ages 18-64)</label>
+            <input type="number" id="inputAdults" class="form-input" min="1" max="20" value="2" required>
+          </div>
+          <div class="form-group">
+            <label for="inputChildren" class="form-label" data-i18n="formLabelChildren">Children / Teens (0-17)</label>
+            <input type="number" id="inputChildren" class="form-input" min="0" max="10" value="2">
+          </div>
+          <div class="form-group">
+            <label for="inputSeniors" class="form-label" data-i18n="formLabelSeniors">Seniors (Ages 65+)</label>
+            <input type="number" id="inputSeniors" class="form-input" min="0" max="10" value="0">
+          </div>
+        </div>
+
+        <!-- Step 3: Type of visit & Budget preference -->
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="selectTripType" class="form-label" data-i18n="formLabelTripType">Type of Visit *</label>
+            <select id="selectTripType" class="form-input">
+              <option value="Family Vacation" data-i18n="typeFamily">Family Vacation (Balanced & Child Friendly)
+              </option>
+              <option value="Cultural Exploration" data-i18n="typeCulture">Cultural Exploration & Heritage</option>
+              <option value="Relaxation & Wellness" data-i18n="typeRelaxation">Relaxation, Scenery & Wellness</option>
+              <option value="Celebration & Honeymoon" data-i18n="typeCelebration">Celebration, Romance & Honeymoon
+              </option>
+              <option value="Adventure & Active" data-i18n="typeAdventure">Adventure, Hiking & Active</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="selectBudgetPref" class="form-label" data-i18n="formLabelBudgetPref">Budget Preference *</label>
+            <select id="selectBudgetPref" class="form-input">
+              <option value="budget" data-i18n="budgetOptionEconomy">Budget / Economy (Hostels, Street Eats, Transit)
+              </option>
+              <option value="moderate" selected data-i18n="budgetOptionModerate">Moderate / Comfort (Family Hotels,
+                Casual Dining, Passports)</option>
+              <option value="luxury" data-i18n="budgetOptionLuxury">Luxury / Premium (5-Star Stays, Fine Dining, Private
+                Cars)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 4: Dates -->
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="inputStartDate" class="form-label" data-i18n="formLabelStartDate">Start Date</label>
+            <input type="date" id="inputStartDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="inputSpecialNotes" class="form-label" data-i18n="formLabelSpecialNotes">Special Preferences /
+              Accessibility</label>
+            <input type="text" id="inputSpecialNotes" class="form-input"
+              placeholder="e.g. Stroller needed, vegetarian, elevator required">
+          </div>
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" id="btnCancelNewTrip" data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnGenerateTripSubmit">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span data-i18n="btnGeneratePlan">Generate Complete Trip Plan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+
+</html>

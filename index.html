@@ -8,7 +8,7 @@
   <meta name="description"
     content="TripCraft is a personalized, multilingual travel planner that crafts organized itineraries with weather adaptation, accessibility flags, and local food discovery.">
 
-  <!-- Modern Typography -->
+  <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -56,7 +56,6 @@
 
       <!-- Nav Controls -->
       <div class="nav-controls">
-        <!-- New Trip CTA Button -->
         <button id="btnNewTrip" class="btn btn-primary" type="button">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -67,8 +66,7 @@
 
         <!-- Auth Navigation Controls -->
         <div class="auth-nav-container" style="display: flex; align-items: center; gap: 0.5rem;">
-          
-          <!-- Logged Out State (Visible by default) -->
+          <!-- Logged Out State -->
           <div id="authNavGroup" style="display: flex; gap: 0.5rem;">
             <button id="btnLoginModal" class="btn btn-primary" type="button">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -90,25 +88,10 @@
             </button>
           </div>
 
-          <!-- Logged In State (Hidden by default) -->
+          <!-- Logged In State -->
           <div id="userNavGroup" style="display: none; align-items: center; gap: 0.75rem;">
-            <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
-              <div id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
-                A
-              </div>
-              <span id="userNameDisplay" style="font-weight: 500; font-size: 0.9rem;">User</span>
-            </div>
-            
-            <button id="btnLogout" class="btn btn-secondary" type="button" style="padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span data-i18n="btnLogout">Logout</span>
-            </button>
+            <!-- Populated via auth.js -->
           </div>
-
         </div>
 
         <!-- Language Selector -->
@@ -146,9 +129,8 @@
           </div>
         </div>
 
-        <!-- Dark / Light Theme Toggle -->
-        <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Toggle Dark/Light Mode"
-          title="Toggle Theme">
+        <!-- Theme Toggle -->
+        <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Toggle Dark/Light Mode" title="Toggle Theme">
           <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="5" />
             <line x1="12" y1="1" x2="12" y2="3" />
@@ -182,10 +164,9 @@
           </div>
 
           <h1 class="hero-destination-title" id="heroTitle">Tokyo Neon & Heritage</h1>
-          <p class="hero-description" id="heroSubtitle">A personalized voyage balancing vibrant pop-culture districts,
-            historic Shinto shrines, and serene imperial gardens.</p>
+          <p class="hero-description" id="heroSubtitle">A personalized voyage balancing vibrant pop-culture districts, historic Shinto shrines, and serene imperial gardens.</p>
 
-          <!-- Quick Metrics Matrix -->
+          <!-- Metrics Matrix -->
           <div class="hero-metrics-grid">
             <div class="metric-card">
               <div class="metric-icon-wrap">
@@ -231,8 +212,7 @@
             <div class="metric-card">
               <div class="metric-icon-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon
-                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
               </div>
               <div class="metric-info">
@@ -245,7 +225,7 @@
       </div>
     </section>
 
-    <!-- Main Navigation Tabs -->
+    <!-- Navigation Tabs -->
     <nav class="app-tab-navigation" aria-label="Trip Views">
       <div class="tab-list-container">
         <button class="tab-btn active" data-tab="itinerary" type="button">
@@ -273,522 +253,93 @@
           </svg>
           <span data-i18n="tabBudget">Cost Estimates & Budget</span>
         </button>
-
-        <button class="tab-btn" data-tab="customize" type="button">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path
-              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          <span data-i18n="tabCustomize">Modify & Customize</span>
-        </button>
-
-        <button class="tab-btn" data-tab="packing" type="button">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-          </svg>
-          <span data-i18n="tabPacking">Packing Checklist</span>
-        </button>
       </div>
     </nav>
 
-    <!-- Main Workspace Content -->
+    <!-- Content Sections -->
     <main class="main-content">
-
-      <!-- ================= TAB 1: ITINERARY ================= -->
-      <section id="tabViewItinerary" class="tab-content-panel active">
-        <!-- Day Selector Header -->
-        <div class="itinerary-header-bar">
-          <div class="day-pills-scroller" id="dayPillsContainer">
-            <!-- Day pills populated via JS -->
-          </div>
-
-          <div class="itinerary-action-tools">
-            <button id="btnAdjustPaceHeader" class="btn btn-secondary btn-sm" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span data-i18n="btnAdjustPace">Adjust Pace</span>
-            </button>
-            <button id="btnPrintItinerary" class="btn btn-secondary btn-sm" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 6 2 18 2 18 9" />
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                <rect x="6" y="14" width="12" height="8" />
-              </svg>
-              <span data-i18n="btnPrint">Print / PDF</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Current Day Info Banner (Geographic neighborhood & Weather adaptation) -->
-        <div class="day-context-banner" id="dayContextBanner">
-          <div class="context-group">
-            <div class="context-icon-wrap geo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-            </div>
-            <div class="context-text">
-              <div class="context-title" data-i18n="labelNeighborhoodCluster">Geographic Neighborhood Cluster</div>
-              <div class="context-value" id="dayNeighborhoodText">Asakusa, Sensoji & Sumida Riverfront</div>
-              <span class="context-subtext" data-i18n="transitOptimizedSubtext">Activities grouped within 1.2km to
-                minimize walking and transit time for families.</span>
-            </div>
-          </div>
-
-          <div class="context-group">
-            <div class="context-icon-wrap weather">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2" />
-                <path d="M12 20v2" />
-                <path d="m4.93 4.93 1.41 1.41" />
-                <path d="m17.66 17.66 1.41 1.41" />
-                <path d="M2 12h2" />
-                <path d="M20 12h2" />
-                <path d="m6.34 17.66-1.41 1.41" />
-                <path d="m19.07 4.93-1.41 1.41" />
-              </svg>
-            </div>
-            <div class="context-text">
-              <div class="context-title" data-i18n="labelWeatherAdaptation">Weather Adaptation Plan</div>
-              <div class="context-value" id="dayWeatherAdaptationText">☀️ Cool morning outdoor temple visits; midday
-                air-conditioned arcade/museum; sunset river breeze walk.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Daily Timeline Blocks -->
-        <div class="timeline-blocks-wrapper" id="timelineCardsContainer">
-          <!-- Populated by renderItinerary() -->
-        </div>
-
-        <!-- Bottom Options / Request Changes Section -->
-        <div class="itinerary-footer-card">
-          <div class="footer-card-header">
-            <div class="footer-card-title-group">
-              <h3 data-i18n="customizePlanTitle">Customize or Fine-Tune This Day</h3>
-              <p data-i18n="customizePlanSubtitle">Easily swap an activity, change a food recommendation, adjust pacing,
-                or request direct booking guidance.</p>
-            </div>
-          </div>
-          <div class="footer-actions-grid">
-            <button class="action-card-btn" id="btnQuickSwapActivity" type="button">
-              <div class="action-btn-icon">🔄</div>
-              <div class="action-btn-text">
-                <strong data-i18n="actionSwapActivity">Swap an Activity</strong>
-                <span data-i18n="actionSwapActivityDesc">Browse curated alternate sights in this district</span>
-              </div>
-            </button>
-
-            <button class="action-card-btn" id="btnQuickSwapDining" type="button">
-              <div class="action-btn-icon">🍜</div>
-              <div class="action-btn-text">
-                <strong data-i18n="actionChangeRestaurant">Change Restaurant</strong>
-                <span data-i18n="actionChangeRestaurantDesc">Pick vegetarian, halal, or child-friendly local
-                  eateries</span>
-              </div>
-            </button>
-
-            <button class="action-card-btn" id="btnQuickAdjustPace" type="button">
-              <div class="action-btn-icon">⏳</div>
-              <div class="action-btn-text">
-                <strong data-i18n="actionAdjustPace">Adjust Daily Pace</strong>
-                <span data-i18n="actionAdjustPaceDesc">Switch between Relaxed, Balanced, and Fast-Paced</span>
-              </div>
-            </button>
-
-            <button class="action-card-btn" id="btnQuickBookingGuide" type="button">
-              <div class="action-btn-icon">🎟️</div>
-              <div class="action-btn-text">
-                <strong data-i18n="actionBookingGuide">Booking Guidance & Links</strong>
-                <span data-i18n="actionBookingGuideDesc">Official entry passes, transit cards & reservations</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB 2: RECOMMENDED STAYS ================= -->
-      <section id="tabViewStays" class="tab-content-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title" data-i18n="staysHeaderTitle">Recommended Places to Stay</h2>
-            <p class="panel-subtitle" data-i18n="staysHeaderSubtitle">Curated accommodations tailored to your group
-              size, traveler ages, accessibility needs, and budget preference.</p>
-          </div>
-          <div class="stays-filter-pill-bar">
-            <span class="filter-label" data-i18n="filterBy">Filter by:</span>
-            <button class="pill-btn active" data-stay-filter="all" type="button" data-i18n="filterAll">All
-              Recommendations</button>
-            <button class="pill-btn" data-stay-filter="family" type="button" data-i18n="filterFamilySuites">Family
-              Suites</button>
-            <button class="pill-btn" data-stay-filter="accessible" type="button" data-i18n="filterAccessible">Wheelchair
-              / Stroller Ready</button>
-            <button class="pill-btn" data-stay-filter="central" type="button" data-i18n="filterCentral">Transit
-              Centric</button>
-          </div>
-        </div>
-
-        <div class="stays-grid" id="staysContainer">
-          <!-- Populated by renderStays() -->
-        </div>
-      </section>
-
-      <!-- ================= TAB 3: BUDGET & COST ESTIMATES ================= -->
-      <section id="tabViewBudget" class="tab-content-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title" data-i18n="budgetHeaderTitle">Cost Estimates & Budget Planning</h2>
-            <p class="panel-subtitle" data-i18n="budgetHeaderSubtitle">Clear cost breakdowns for accommodations, local
-              food, entry admissions, and neighborhood transit.</p>
-          </div>
-          <div class="budget-preference-badge">
-            <span data-i18n="budgetTierLabel">Budget Tier:</span>
-            <strong id="budgetTierName">Moderate / Balanced Comfort</strong>
-          </div>
-        </div>
-
-        <!-- Budget Stats Overview Cards -->
-        <div class="budget-kpi-row">
-          <div class="kpi-card">
-            <span class="kpi-label" data-i18n="totalEstTripCost">Total Estimated Trip Cost</span>
-            <div class="kpi-number" id="budgetTotalCost">$2,250</div>
-            <span class="kpi-caption" id="budgetTotalCaption">For 4 travelers over 5 days</span>
-          </div>
-
-          <div class="kpi-card">
-            <span class="kpi-label" data-i18n="dailySpendAverage">Average Daily Spend</span>
-            <div class="kpi-number" id="budgetDailyAvg">$450</div>
-            <span class="kpi-caption" data-i18n="includesAllExpenses">Includes lodging, dining, transit & tickets</span>
-          </div>
-
-          <div class="kpi-card">
-            <span class="kpi-label" data-i18n="perPersonEstimate">Per Person Estimate</span>
-            <div class="kpi-number" id="budgetPerPerson">$562.50</div>
-            <span class="kpi-caption" data-i18n="perTravelerTotal">All-inclusive per traveler estimate</span>
-          </div>
-
-          <div class="kpi-card">
-            <span class="kpi-label" data-i18n="budgetStatus">Budget Health</span>
-            <div class="kpi-number text-success" id="budgetHealthStatus" data-i18n="onTrack">On Track</div>
-            <span class="kpi-caption" data-i18n="alignedWithTier">Aligned with your selected comfort tier</span>
-          </div>
-        </div>
-
-        <!-- Expense Category Distribution Bar -->
-        <div class="card expense-breakdown-card">
-          <h3 class="card-title" data-i18n="categoryBreakdownTitle">Expense Category Breakdown</h3>
-          <div class="progress-bar-segmented" id="budgetProgressBar">
-            <div class="seg seg-lodging" style="width: 45%;" title="Lodging: 45%"></div>
-            <div class="seg seg-dining" style="width: 30%;" title="Dining & Food: 30%"></div>
-            <div class="seg seg-tickets" style="width: 15%;" title="Attractions & Entry: 15%"></div>
-            <div class="seg seg-transit" style="width: 10%;" title="Transit & Transfers: 10%"></div>
-          </div>
-          <div class="expense-legend-row">
-            <span class="legend-item"><span class="dot lodging"></span> <span data-i18n="catLodging">Lodging</span>
-              (<strong id="costLodgingPct">45%</strong>)</span>
-            <span class="legend-item"><span class="dot dining"></span> <span data-i18n="catDining">Local Dining</span>
-              (<strong id="costDiningPct">30%</strong>)</span>
-            <span class="legend-item"><span class="dot tickets"></span> <span data-i18n="catTickets">Attractions &
-                Entry</span> (<strong id="costTicketsPct">15%</strong>)</span>
-            <span class="legend-item"><span class="dot transit"></span> <span data-i18n="catTransit">Neighborhood
-                Transit</span> (<strong id="costTransitPct">10%</strong>)</span>
-          </div>
-        </div>
-
-        <!-- Day-by-Day Cost Table -->
-        <div class="card table-card">
-          <h3 class="card-title" data-i18n="dailyCostBreakdownTitle">Daily Spending Breakdown</h3>
-          <div class="table-responsive">
-            <table class="cost-table">
-              <thead>
-                <tr>
-                  <th data-i18n="thDay">Day</th>
-                  <th data-i18n="thNeighborhood">Neighborhood Cluster</th>
-                  <th data-i18n="thMeals">Meals & Street Food</th>
-                  <th data-i18n="thTickets">Attractions & Entries</th>
-                  <th data-i18n="thTransit">Transit</th>
-                  <th data-i18n="thDailyTotal">Daily Total</th>
-                </tr>
-              </thead>
-              <tbody id="dailyCostTableBody">
-                <!-- Populated via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB 4: MODIFY & CUSTOMIZE ================= -->
-      <section id="tabViewCustomize" class="tab-content-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title" data-i18n="customizeHeaderTitle">TripCraft Customization Studio</h2>
-            <p class="panel-subtitle" data-i18n="customizeHeaderSubtitle">Modify your itinerary to suit your changing
-              energy levels, dietary desires, and travel tempo.</p>
-          </div>
-        </div>
-
-        <div class="customization-columns">
-          <!-- Column 1: Pace Control -->
-          <div class="card pace-selector-card">
-            <h3 class="card-title" data-i18n="paceControlTitle">Daily Pace & Tempo</h3>
-            <p class="card-subtitle" data-i18n="paceControlSubtitle">Adapt the itinerary density to fit family stamina
-              and personal travel philosophy.</p>
-
-            <div class="pace-options-list">
-              <label class="pace-option-card">
-                <input type="radio" name="tripPace" value="relaxed" id="paceRelaxed">
-                <div class="pace-card-content">
-                  <div class="pace-header">
-                    <span class="pace-name" data-i18n="paceRelaxedName">🌿 Relaxed & Unhurried</span>
-                    <span class="pace-tag" data-i18n="paceRelaxedTag">Family & Seniors</span>
-                  </div>
-                  <p class="pace-description" data-i18n="paceRelaxedDesc">Late mornings, maximum 2 activities per day,
-                    generous cafe breaks, and early dinners.</p>
-                </div>
-              </label>
-
-              <label class="pace-option-card active">
-                <input type="radio" name="tripPace" value="balanced" id="paceBalanced" checked>
-                <div class="pace-card-content">
-                  <div class="pace-header">
-                    <span class="pace-name" data-i18n="paceBalancedName">⚖️ Balanced & Curated</span>
-                    <span class="pace-tag" data-i18n="paceBalancedTag">Recommended</span>
-                  </div>
-                  <p class="pace-description" data-i18n="paceBalancedDesc">Structured morning and afternoon exploration
-                    with flexible evenings and neighborhood grouping.</p>
-                </div>
-              </label>
-
-              <label class="pace-option-card">
-                <input type="radio" name="tripPace" value="packed" id="pacePacked">
-                <div class="pace-card-content">
-                  <div class="pace-header">
-                    <span class="pace-name" data-i18n="pacePackedName">⚡ Fast-Paced & Immersive</span>
-                    <span class="pace-tag" data-i18n="pacePackedTag">Active Explorers</span>
-                  </div>
-                  <p class="pace-description" data-i18n="pacePackedDesc">Early start, 4-5 major sights, night tours, and
-                    maximized discovery for high energy travelers.</p>
-                </div>
-              </label>
-            </div>
-
-            <button id="btnApplyPace" class="btn btn-primary btn-block" type="button" data-i18n="btnApplyPace">Apply
-              Pace to Itinerary</button>
-          </div>
-
-          <!-- Column 2: Activity & Dining Quick Swap -->
-          <div class="card swap-console-card">
-            <h3 class="card-title" data-i18n="swapConsoleTitle">Swap Activities or Dining Spots</h3>
-            <p class="card-subtitle" data-i18n="swapConsoleSubtitle">Select any day slot to view instant smart
-              alternatives in the same neighborhood cluster.</p>
-
-            <div class="form-group">
-              <label for="swapDaySelect" class="form-label" data-i18n="labelTargetDay">Select Day to Modify</label>
-              <select id="swapDaySelect" class="form-input">
-                <!-- Filled dynamically -->
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="swapSlotSelect" class="form-label" data-i18n="labelTimeSlot">Time Block to Swap</label>
-              <select id="swapSlotSelect" class="form-input">
-                <option value="morning" data-i18n="slotMorning">Morning Activity</option>
-                <option value="lunch" data-i18n="slotLunch">Lunch & Local Food Spot</option>
-                <option value="afternoon" data-i18n="slotAfternoon">Afternoon Activity</option>
-                <option value="evening" data-i18n="slotEvening">Evening Activity & Dinner</option>
-              </select>
-            </div>
-
-            <div class="alternatives-wrapper">
-              <label class="form-label" data-i18n="labelCuratedAlternates">Curated Alternatives for Selected
-                Slot:</label>
-              <div class="alternates-list" id="swapAlternatesContainer">
-                <!-- Filled dynamically -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Direct Booking Guidance & Official Links -->
-        <div class="card booking-guidance-section">
-          <h3 class="card-title" data-i18n="bookingGuidanceTitle">Direct Booking Guidance & Official Links</h3>
-          <p class="card-subtitle" data-i18n="bookingGuidanceSubtitle">Avoid overpriced third-party reseller markups
-            with TripCraft's official reservation portals and passes.</p>
-
-          <div class="booking-links-grid" id="bookingLinksGrid">
-            <!-- Populated via JS -->
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB 5: PACKING CHECKLIST ================= -->
-      <section id="tabViewPacking" class="tab-content-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title" data-i18n="packingHeaderTitle">Smart Packing & Travel Preparation</h2>
-            <p class="panel-subtitle" data-i18n="packingHeaderSubtitle">Checklist tailored to your destination's
-              seasonal weather, group age composition, and activity types.</p>
-          </div>
-          <div class="packing-progress-indicator">
-            <span class="packing-pct-label"><span id="packingCountText">0 / 0</span> <span
-                data-i18n="packed">Packed</span> (<span id="packingPctText">0%</span>)</span>
-            <div class="progress-bar-wrapper">
-              <div class="progress-bar-fill" id="packingProgressBar" style="width: 0%;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="packing-sections-grid" id="packingCardsGrid">
-          <!-- Populated by renderPacking() -->
-        </div>
-      </section>
-
+      <section id="itinerary" class="tab-content-panel active"></section>
+      <section id="stays" class="tab-content-panel"></section>
+      <section id="budget" class="tab-content-panel"></section>
     </main>
 
     <!-- Footer -->
     <footer class="app-footer">
       <div class="footer-container">
         <div class="footer-brand">
-          <strong>TripCraft Intelligent Planner</strong> — <span data-i18n="footerText">Crafting personalized,
-            weather-adaptive journeys worldwide.</span>
-        </div>
-        <div class="footer-meta">
-          <span data-i18n="footerLangSupport">Compatible with all languages • Family & Accessibility Centered</span>
+          <strong>TripCraft Studio</strong> &mdash; <span data-i18n="footerText">Crafting personalized journeys worldwide.</span>
         </div>
       </div>
     </footer>
-
   </div>
 
-  <!-- ================= MODAL 1: PLAN A NEW TRIP ================= -->
-<div class="modal-backdrop" id="modalNewTrip" role="dialog" aria-modal="true" aria-labelledby="modalNewTripTitle">
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <div class="modal-title-wrap">
-        <div class="brand-icon-wrapper sm">
-          <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
-          </svg>
-        </div>
-        <h2 class="modal-title" id="modalNewTripTitle" data-i18n="modalNewTripTitle">Plan a New Personalized Journey</h2>
+  <!-- Toast Stack -->
+  <div id="toastStack" class="toast-stack"></div>
+
+  <!-- Modal 1: Plan New Trip Modal -->
+  <div id="newTripModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="modalNewTripTitle">Plan a New Personalized Journey</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
       </div>
-      <button class="modal-close-btn" id="btnCloseNewTripModal" type="button" aria-label="Close modal" data-close-modal>&times;</button>
-    </div>
-
-    <form id="formNewTrip" class="modal-body-form">
-      <!-- Destination & Duration -->
-      <div class="form-row two-col">
-        <div class="form-group">
-          <label for="inputDestination" class="form-label" data-i18n="formLabelDestination">Destination City & Country *</label>
-          <input type="text" id="inputDestination" class="form-input" placeholder="e.g. Paris, France or Tokyo, Japan" required>
+      <form id="newTripForm" class="modal-body-form">
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelDestination">Destination City & Country *</label>
+            <input type="text" id="inputDestination" class="form-input" placeholder="e.g. Kyoto, Japan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelDuration">Duration (Days) *</label>
+            <input type="number" id="inputDuration" class="form-input" min="1" max="30" value="5" required>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="inputDuration" class="form-label" data-i18n="formLabelDuration">Duration (Days) *</label>
-          <input type="number" id="inputDuration" class="form-input" min="1" max="14" value="5" required>
-        </div>
-      </div>
 
-      <!-- Trip Type Select -->
-      <div class="form-group">
-        <label for="selectTripType" class="form-label" data-i18n="formLabelTripType">Trip Type</label>
-        <select id="selectTripType" class="form-input">
-          <option value="Family Vacation" data-i18n="optionFamily">Family Vacation</option>
-          <option value="Solo Adventure" data-i18n="optionSolo">Solo Adventure</option>
-          <option value="Couples Getaway" data-i18n="optionCouples">Couples Getaway</option>
-        </select>
-      </div>
-
-      <!-- Actions Footer -->
-      <div class="modal-footer-actions">
-        <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
-        <button type="submit" class="btn btn-primary" data-i18n="btnCreateTrip">Create Trip</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-
-        <!-- Step 2: Who is traveling -->
-        <div class="form-section-title" data-i18n="formSectionTravelers">Who is traveling? (Group size & age breakdown)
-        </div>
+        <div class="form-section-title" data-i18n="formSectionTravelers">Who is traveling? (Group size & age breakdown)</div>
         <div class="form-row three-col">
           <div class="form-group">
-            <label for="inputAdults" class="form-label" data-i18n="formLabelAdults">Adults (Ages 18-64)</label>
-            <input type="number" id="inputAdults" class="form-input" min="1" max="20" value="2" required>
+            <label class="form-label" data-i18n="formLabelAdults">Adults (18-64)</label>
+            <input type="number" id="inputAdults" class="form-input" min="1" value="2">
           </div>
           <div class="form-group">
-            <label for="inputChildren" class="form-label" data-i18n="formLabelChildren">Children / Teens (0-17)</label>
-            <input type="number" id="inputChildren" class="form-input" min="0" max="10" value="2">
+            <label class="form-label" data-i18n="formLabelChildren">Children (0-17)</label>
+            <input type="number" id="inputChildren" class="form-input" min="0" value="2">
           </div>
           <div class="form-group">
-            <label for="inputSeniors" class="form-label" data-i18n="formLabelSeniors">Seniors (Ages 65+)</label>
-            <input type="number" id="inputSeniors" class="form-input" min="0" max="10" value="0">
+            <label class="form-label" data-i18n="formLabelSeniors">Seniors (65+)</label>
+            <input type="number" id="inputSeniors" class="form-input" min="0" value="0">
           </div>
         </div>
 
-        <!-- Step 3: Type of visit & Budget preference -->
         <div class="form-row two-col">
           <div class="form-group">
-            <label for="selectTripType" class="form-label" data-i18n="formLabelTripType">Type of Visit *</label>
+            <label class="form-label" data-i18n="formLabelTripType">Type of Visit *</label>
             <select id="selectTripType" class="form-input">
-              <option value="Family Vacation" data-i18n="typeFamily">Family Vacation (Balanced & Child Friendly)
-              </option>
-              <option value="Cultural Exploration" data-i18n="typeCulture">Cultural Exploration & Heritage</option>
-              <option value="Relaxation & Wellness" data-i18n="typeRelaxation">Relaxation, Scenery & Wellness</option>
-              <option value="Celebration & Honeymoon" data-i18n="typeCelebration">Celebration, Romance & Honeymoon
-              </option>
-              <option value="Adventure & Active" data-i18n="typeAdventure">Adventure, Hiking & Active</option>
+              <option value="Family Vacation">Family Vacation</option>
+              <option value="Cultural Exploration">Cultural Exploration</option>
+              <option value="Relaxation & Wellness">Relaxation & Wellness</option>
+              <option value="Adventure">Adventure</option>
             </select>
           </div>
-
           <div class="form-group">
-            <label for="selectBudgetPref" class="form-label" data-i18n="formLabelBudgetPref">Budget Preference *</label>
+            <label class="form-label" data-i18n="formLabelBudgetPref">Budget Preference *</label>
             <select id="selectBudgetPref" class="form-input">
-              <option value="budget" data-i18n="budgetOptionEconomy">Budget / Economy (Hostels, Street Eats, Transit)
-              </option>
-              <option value="moderate" selected data-i18n="budgetOptionModerate">Moderate / Comfort (Family Hotels,
-                Casual Dining, Passports)</option>
-              <option value="luxury" data-i18n="budgetOptionLuxury">Luxury / Premium (5-Star Stays, Fine Dining, Private
-                Cars)</option>
+              <option value="economy">Budget / Economy</option>
+              <option value="moderate" selected>Moderate / Comfort</option>
+              <option value="luxury">Luxury / Premium</option>
             </select>
-          </div>
-        </div>
-
-        <!-- Step 4: Dates -->
-        <div class="form-row two-col">
-          <div class="form-group">
-            <label for="inputStartDate" class="form-label" data-i18n="formLabelStartDate">Start Date</label>
-            <input type="date" id="inputStartDate" class="form-input">
-          </div>
-          <div class="form-group">
-            <label for="inputSpecialNotes" class="form-label" data-i18n="formLabelSpecialNotes">Special Preferences /
-              Accessibility</label>
-            <input type="text" id="inputSpecialNotes" class="form-input"
-              placeholder="e.g. Stroller needed, vegetarian, elevator required">
           </div>
         </div>
 
         <div class="modal-footer-actions">
-          <button type="button" class="btn btn-secondary" id="btnCancelNewTrip" data-i18n="btnCancel" data-close-modal>Cancel</button>
-          <button type="submit" class="btn btn-primary" id="btnGenerateTripSubmit">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-            <span data-i18n="btnGeneratePlan">Generate Complete Trip Plan</span>
-          </button>
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnGeneratePlan">Generate Complete Trip Plan</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ================= MODAL 2: LOGIN ================= -->
+  <!-- Modal 2: Login Modal -->
   <div id="loginModal" class="modal-backdrop">
     <div class="modal-dialog" style="max-width: 440px;">
       <div class="modal-header">
@@ -797,7 +348,7 @@
       </div>
       <form id="loginForm" class="modal-body-form">
         <div class="form-group">
-          <label for="loginEmail" class="form-label">Email or Username</label>
+          <label for="loginEmail" class="form-label">Email Address</label>
           <input type="email" id="loginEmail" name="email" class="form-input" placeholder="name@example.com" required autocomplete="username">
         </div>
         <div class="form-group">
@@ -812,7 +363,7 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 3: REGISTER ================= -->
+  <!-- Modal 3: Register Modal -->
   <div id="registerModal" class="modal-backdrop">
     <div class="modal-dialog" style="max-width: 480px;">
       <div class="modal-header">
@@ -840,39 +391,11 @@
     </div>
   </div>
 
-  <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
-  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
-
-  <!-- Modal Open/Close Toggle Handlers -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const loginBtn = document.getElementById('btnLoginModal');
-      const registerBtn = document.getElementById('btnRegisterModal');
-      const loginModal = document.getElementById('loginModal');
-      const registerModal = document.getElementById('registerModal');
-
-      if (loginBtn && loginModal) {
-        loginBtn.addEventListener('click', () => loginModal.classList.add('active'));
-      }
-
-      if (registerBtn && registerModal) {
-        registerBtn.addEventListener('click', () => registerModal.classList.add('active'));
-      }
-
-      // Universal close button handler
-      document.querySelectorAll('[data-close-modal]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          btn.closest('.modal-backdrop')?.classList.remove('active');
-        });
-      });
-    });
-  </script>
-
   <!-- External Libraries & Application Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
-</body>
 
+</body>
 </html>

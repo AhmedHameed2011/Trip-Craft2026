@@ -1,62 +1,43 @@
 /**
  * TripCraft — Intelligent Travel Planner & Itinerary Studio
- * Master Client Application Script
+ * Master Client Application Engine
  */
 
 (function () {
   'use strict';
 
   // ==========================================================================
-  // 1. Supabase & Authentication Engine
+  // 1. Supabase Cloud Sync Engine
   // ==========================================================================
   const supabase = window.supabaseClient || window.supabase || null;
 
   async function loadUserTrips(userId) {
     if (!supabase) return;
     
-    const { data: trips, error } = await supabase
-      .from('trips')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: trips, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    if (error || !trips || !trips.length) {
-      return;
-    }
+      if (error || !trips || !trips.length) return;
 
-    const tripSelect = document.getElementById('tripSelect');
-    if (tripSelect) {
-      tripSelect.innerHTML = trips.map(t => {
-        const tripTitle = t.trip_data?.title || t.destination || 'Saved Trip';
-        return `<option value="${t.id}">${tripTitle}</option>`;
-      }).join('');
-      
-      tripSelect.addEventListener('change', (e) => {
-        const selectedId = e.target.value;
-        const selectedRow = trips.find(tr => tr.id === selectedId);
-        if (selectedRow) renderTripDetails(selectedRow);
+      trips.forEach(t => {
+        const tripObj = t.trip_data || t;
+        if (!PRESET_TRIPS.some(pt => pt.id === tripObj.id)) {
+          PRESET_TRIPS.unshift(tripObj);
+        }
       });
+
+      populateTripDropdown();
+      renderAllViews();
+    } catch (e) {
+      console.error("Cloud load error:", e);
     }
-    
-    renderTripDetails(trips[0]);
   }
 
-  // Expose loadUserTrips globally for auth modules
   window.loadUserTrips = loadUserTrips;
-
-  function renderTripDetails(tripRow) {
-    const tripObj = tripRow.trip_data || tripRow;
-    const existingIdx = PRESET_TRIPS.findIndex(pt => pt.id === tripObj.id);
-    
-    if (existingIdx !== -1) {
-      currentTripIndex = existingIdx;
-    } else {
-      PRESET_TRIPS.unshift(tripObj);
-      currentTripIndex = 0;
-    }
-    
-    renderAllViews();
-  }
 
   async function saveTripToSupabase(tripObj) {
     if (!supabase || !window.currentUser) return;
@@ -72,10 +53,9 @@
         });
 
       if (error) {
-        console.error('Error saving trip to Supabase:', error);
-        showToast('Error syncing trip to cloud.');
+        console.error('Error saving trip:', error);
       } else {
-        showToast('Trip synced to your account successfully!');
+        showToast('Trip synced to cloud account!');
       }
     } catch (err) {
       console.error('Save to Supabase error:', err);
@@ -83,7 +63,7 @@
   }
 
   // ==========================================================================
-  // 2. Currency & Conversion Engine
+  // 2. Currency Engine
   // ==========================================================================
   const CURRENCIES = {
     USD: { symbol: '$', rate: 1.0 },
@@ -109,7 +89,7 @@
   }
 
   // ==========================================================================
-  // 3. Multilingual Localization Engine
+  // 3. Multilingual Translations Dictionary
   // ==========================================================================
   const TRANSLATIONS = {
     en: {
@@ -123,114 +103,26 @@
       tabItinerary: "Day-by-Day Itinerary",
       tabStays: "Recommended Stays",
       tabBudget: "Cost Estimates & Budget",
-      tabCustomize: "Modify & Customize",
-      tabPacking: "Packing Checklist",
-      btnAdjustPace: "Adjust Pace",
-      btnPrint: "Print / PDF",
       labelNeighborhoodCluster: "Geographic Neighborhood Cluster",
-      transitOptimizedSubtext: "Activities grouped within 1.2km to minimize walking and transit time for families.",
+      transitOptimizedSubtext: "Activities grouped within 1.2km to minimize walking for families.",
       labelWeatherAdaptation: "Weather Adaptation Plan",
-      customizePlanTitle: "Customize or Fine-Tune This Day",
-      customizePlanSubtitle: "Easily swap an activity, change a food recommendation, adjust pacing, or request direct booking guidance.",
-      actionSwapActivity: "Swap an Activity",
-      actionSwapActivityDesc: "Browse curated alternate sights in this district",
-      actionChangeRestaurant: "Change Restaurant",
-      actionChangeRestaurantDesc: "Pick vegetarian, halal, or child-friendly local eateries",
-      actionAdjustPace: "Adjust Daily Pace",
-      actionAdjustPaceDesc: "Switch between Relaxed, Balanced, and Fast-Paced",
-      actionBookingGuide: "Booking Guidance & Links",
-      actionBookingGuideDesc: "Official entry passes, transit cards & reservations",
-      staysHeaderTitle: "Recommended Places to Stay",
-      staysHeaderSubtitle: "Curated accommodations tailored to your group size, traveler ages, accessibility needs, and budget preference.",
-      filterBy: "Filter by:",
-      filterAll: "All Recommendations",
-      filterFamilySuites: "Family Suites",
-      filterAccessible: "Wheelchair / Stroller Ready",
-      filterCentral: "Transit Centric",
-      budgetHeaderTitle: "Cost Estimates & Budget Planning",
-      budgetHeaderSubtitle: "Clear cost breakdowns for accommodations, local food, entry admissions, and neighborhood transit.",
-      budgetTierLabel: "Budget Tier:",
-      totalEstTripCost: "Total Estimated Trip Cost",
-      dailySpendAverage: "Average Daily Spend",
-      perPersonEstimate: "Per Person Estimate",
-      budgetStatus: "Budget Health",
-      onTrack: "On Track",
-      includesAllExpenses: "Includes lodging, dining, transit & tickets",
-      perTravelerTotal: "All-inclusive per traveler estimate",
-      alignedWithTier: "Aligned with your selected comfort tier",
-      categoryBreakdownTitle: "Expense Category Breakdown",
-      catLodging: "Lodging",
-      catDining: "Local Dining",
-      catTickets: "Attractions & Entry",
-      catTransit: "Neighborhood Transit",
-      dailyCostBreakdownTitle: "Daily Spending Breakdown",
-      thDay: "Day",
-      thNeighborhood: "Neighborhood Cluster",
-      thMeals: "Meals & Street Food",
-      thTickets: "Attractions & Entries",
-      thTransit: "Transit",
-      thDailyTotal: "Daily Total",
-      customizeHeaderTitle: "TripCraft Customization Studio",
-      customizeHeaderSubtitle: "Modify your itinerary to suit your changing energy levels, dietary desires, and travel tempo.",
-      paceControlTitle: "Daily Pace & Tempo",
-      paceControlSubtitle: "Adapt the itinerary density to fit family stamina and personal travel philosophy.",
-      paceRelaxedName: "🌿 Relaxed & Unhurried",
-      paceRelaxedTag: "Family & Seniors",
-      paceRelaxedDesc: "Late mornings, maximum 2 activities per day, generous cafe breaks, and early dinners.",
-      paceBalancedName: "⚖️ Balanced & Curated",
-      paceBalancedTag: "Recommended",
-      paceBalancedDesc: "Structured morning and afternoon exploration with flexible evenings and neighborhood grouping.",
-      pacePackedName: "⚡ Fast-Paced & Immersive",
-      pacePackedTag: "Active Explorers",
-      pacePackedDesc: "Early start, 4-5 major sights, night tours, and maximized discovery for high energy travelers.",
-      btnApplyPace: "Apply Pace to Itinerary",
-      swapConsoleTitle: "Swap Activities or Dining Spots",
-      swapConsoleSubtitle: "Select any day slot to view instant smart alternatives in the same neighborhood cluster.",
-      labelTargetDay: "Select Day to Modify",
-      labelTimeSlot: "Time Block to Swap",
-      slotMorning: "Morning Activity",
-      slotLunch: "Lunch & Local Food Spot",
-      slotAfternoon: "Afternoon Activity",
-      slotEvening: "Evening Activity & Dinner",
-      labelCuratedAlternates: "Curated Alternatives for Selected Slot:",
-      bookingGuidanceTitle: "Direct Booking Guidance & Official Links",
-      bookingGuidanceSubtitle: "Avoid overpriced third-party reseller markups with TripCraft's official reservation portals and passes.",
-      packingHeaderTitle: "Smart Packing & Travel Preparation",
-      packingHeaderSubtitle: "Checklist tailored to your destination's seasonal weather, group age composition, and activity types.",
-      packed: "Packed",
-      footerText: "Crafting personalized, weather-adaptive journeys worldwide.",
-      footerLangSupport: "Compatible with all languages • Family & Accessibility Centered",
+      completed: "Completed",
+      markCompleted: "Mark Done",
       modalNewTripTitle: "Plan a New Personalized Journey",
       formLabelDestination: "Destination City & Country *",
       formLabelDuration: "Duration (Days) *",
-      formSectionTravelers: "Who is traveling? (Group size & age breakdown)",
-      formLabelAdults: "Adults (Ages 18-64)",
-      formLabelChildren: "Children / Teens (0-17)",
-      formLabelSeniors: "Seniors (Ages 65+)",
+      formSectionTravelers: "Who is traveling?",
+      formLabelAdults: "Adults (18-64)",
+      formLabelChildren: "Children (0-17)",
+      formLabelSeniors: "Seniors (65+)",
       formLabelTripType: "Type of Visit *",
-      typeFamily: "Family Vacation (Balanced & Child Friendly)",
-      typeCulture: "Cultural Exploration & Heritage",
-      typeRelaxation: "Relaxation, Scenery & Wellness",
-      typeCelebration: "Celebration, Romance & Honeymoon",
-      typeAdventure: "Adventure, Hiking & Active",
       formLabelBudgetPref: "Budget Preference *",
-      budgetOptionEconomy: "Budget / Economy (Hostels, Street Eats, Transit)",
-      budgetOptionModerate: "Moderate / Comfort (Family Hotels, Casual Dining, Passports)",
-      budgetOptionLuxury: "Luxury / Premium (5-Star Stays, Fine Dining, Private Cars)",
-      formLabelStartDate: "Start Date",
-      formLabelSpecialNotes: "Special Preferences / Accessibility",
       btnCancel: "Cancel",
       btnGeneratePlan: "Generate Complete Trip Plan",
-      completed: "Completed",
-      markCompleted: "Mark Done",
-      btnSwap: "Swap",
-      btnBook: "Booking Info",
-      btnSelectThis: "Select Alternative",
-      perNight: "/ night",
       btnLogin: "Login",
       btnRegister: "Register",
       btnLogout: "Logout",
-      welcomeUser: "Welcome,"
+      footerText: "Crafting personalized, weather-adaptive journeys worldwide."
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -243,114 +135,26 @@
       tabItinerary: "جدول الأيام خطوة بخطوة",
       tabStays: "خيارات الإقامة الموصى بها",
       tabBudget: "تقديرات التكلفة والميزانية",
-      tabCustomize: "تعديل وتخصيص الخطة",
-      tabPacking: "قائمة تجهيز الحقائب",
-      btnAdjustPace: "تعديل سرعة اليوم",
-      btnPrint: "طباعة / PDF",
       labelNeighborhoodCluster: "التجمع الجغرافي للحي",
-      transitOptimizedSubtext: "تم تجميع الأنشطة في نطاق 1.2 كم لتقليل وقت التنقل والمشي للعائلات.",
+      transitOptimizedSubtext: "تم تجميع الأنشطة في نطاق 1.2 كم لتقليل وقت التنقل والمشي.",
       labelWeatherAdaptation: "خطة التكيف مع الطقس",
-      customizePlanTitle: "تخصيص وتعديل خطة هذا اليوم",
-      customizePlanSubtitle: "يمكنك بسهولة تبديل نشاط، تغيير مطعم محلي، تعديل وتيرة اليوم، أو طلب روابط الحجز المباشرة.",
-      actionSwapActivity: "تبديل نشاط",
-      actionSwapActivityDesc: "استعرض معالم بديلة ومميزة في نفس الحي",
-      actionChangeRestaurant: "تغيير المطعم",
-      actionChangeRestaurantDesc: "اختر مطاعم محلية مناسبة للأطفال أو خيارات نباتية وحلال",
-      actionAdjustPace: "تعديل سرعة اليوم",
-      actionAdjustPaceDesc: "التنقل بين نمط هادئ، متوازن، وسريع ومكثف",
-      actionBookingGuide: "دليل وروابط الحجز المباشر",
-      actionBookingGuideDesc: "التذاكر الرسمية، بطاقات المواصلات والحجوزات المؤكدة",
-      staysHeaderTitle: "أماكن الإقامة الموصى بها",
-      staysHeaderSubtitle: "أماكن إقامة مختارة بعناية لتناسب حجم مجموعتك وأعمار المسافرين وسهولة الوصول وميزانيتك.",
-      filterBy: "تصفية حسب:",
-      filterAll: "جميع التوصيات",
-      filterFamilySuites: "أجنحة عائلية",
-      filterAccessible: "مناسب للعربات والكراسي المتحركة",
-      filterCentral: "قريب من المواصلات",
-      budgetHeaderTitle: "تقديرات التكاليف وتخطيط الميزانية",
-      budgetHeaderSubtitle: "تفصيل واضح للتكاليف يشمل الإقامة، الوجبات المحلية، تذاكر الدخول، والمواصلات.",
-      budgetTierLabel: "مستوى الميزانية:",
-      totalEstTripCost: "إجمالي التكلفة التقديرية للرحلة",
-      dailySpendAverage: "متوسط الإنفاق اليومي",
-      perPersonEstimate: "التقدير لكل شخص",
-      budgetStatus: "حالة الميزانية",
-      onTrack: "ضمن الميزانية",
-      includesAllExpenses: "يشمل السكن، الطعام، المواصلات والتذاكر",
-      perTravelerTotal: "تقدير شامل لكل مسافر",
-      alignedWithTier: "متوافق تماماً مع مستوى الراحة المحدد",
-      categoryBreakdownTitle: "توزيع فئات النفقات",
-      catLodging: "الإقامة الفندقية",
-      catDining: "المطاعم المحلية",
-      catTickets: "المعالم وتذاكر الدخول",
-      catTransit: "المواصلات الداخلية",
-      dailyCostBreakdownTitle: "تفصيل الإنفاق اليومي",
-      thDay: "اليوم",
-      thNeighborhood: "تجمع الحي",
-      thMeals: "الوجبات والأكلات الشعبية",
-      thTickets: "المعالم والتذاكر",
-      thTransit: "المواصلات",
-      thDailyTotal: "المجموع اليومي",
-      customizeHeaderTitle: "استوديو تخصيص TripCraft",
-      customizeHeaderSubtitle: "عدل جدولك ليناسب طاقة العائلة ورغباتك الغذائية ووتيرة سفرك المفضلة.",
-      paceControlTitle: "وتيرة وسرعة اليوم",
-      paceControlSubtitle: "اضبط كثافة الأنشطة لتناسب راحة الأطفال وكبار السن.",
-      paceRelaxedName: "🌿 مريح وغير مستعجل",
-      paceRelaxedTag: "عائلات وكبار السن",
-      paceRelaxedDesc: "صباح متأخر، نشاطان كحد أقصى يومياً، استراحات طويلة في المقاهي، وعشاء مبكر.",
-      paceBalancedName: "⚖️ متوازن ومثالي",
-      paceBalancedTag: "موصى به",
-      paceBalancedDesc: "استكشاف منظم صباحاً وبعد الظهر مع أمسيات مرنة وتجميع ذكي للمواقع.",
-      pacePackedName: "⚡ مكثف وسريع",
-      pacePackedTag: "مستكشفون نشطون",
-      pacePackedDesc: "انطلاق مبكر، 4-5 معالم رئيسية يومياً، جولات ليلية، واكتشاف أقصى قدر ممكن.",
-      btnApplyPace: "تطبيق الوتيرة على الجدول",
-      swapConsoleTitle: "تبديل الأنشطة أو المطاعم",
-      swapConsoleSubtitle: "حدد أي فترة زمنية لعرض خيارات ذكية فورية في نفس الحي.",
-      labelTargetDay: "اختر اليوم المراد تعديله",
-      labelTimeSlot: "الفترة الزمنية للتبديل",
-      slotMorning: "نشاط الصباح",
-      slotLunch: "الغداء والأكل المحلي",
-      slotAfternoon: "نشاط بعد الظهر",
-      slotEvening: "نشاط المساء والعشاء",
-      labelCuratedAlternates: "بدائل ممتازة لهذه الفترة:",
-      bookingGuidanceTitle: "إرشادات وروابط الحجز المباشر",
-      bookingGuidanceSubtitle: "تجنب الرسوم الإضافية عبر بوابات الحجز الرسمية وبطاقات السفر المعتمدة.",
-      packingHeaderTitle: "تجهيز الحقائب الذكي",
-      packingHeaderSubtitle: "قائمة مخصصة تعتمد على طقس وجهتك، أعمار المسافرين، ونوع الأنشطة المخططة.",
-      packed: "تم تجهيزه",
-      footerText: "نصمم رحلات مخصصة ومتكيفة مع الطقس حول العالم.",
-      footerLangSupport: "متوافق مع جميع اللغات • تركيز على العائلة وسهولة الوصول",
+      completed: "مكتمل",
+      markCompleted: "تحديد كمكتمل",
       modalNewTripTitle: "تخطيط رحلة جديدة ومخصصة",
       formLabelDestination: "المدينة والدولة *",
       formLabelDuration: "المدة (بالأيام) *",
-      formSectionTravelers: "من سيسافر؟ (عدد الأشخاص وفئات الأعمار)",
+      formSectionTravelers: "من سيسافر؟",
       formLabelAdults: "البالغون (18-64 سنة)",
-      formLabelChildren: "الأطفال والمراهقون (0-17 سنة)",
+      formLabelChildren: "الأطفال (0-17 سنة)",
       formLabelSeniors: "كبار السن (65+ سنة)",
       formLabelTripType: "نوع الرحلة *",
-      typeFamily: "إجازة عائلية (متوازنة ومناسبة للأطفال)",
-      typeCulture: "استكشاف ثقافي وتاريخي",
-      typeRelaxation: "استرخاء ونقاهة وطبيعة",
-      typeCelebration: "احتفال، شهر عسل ورومانسية",
-      typeAdventure: "مغامرة ومسارات مشي ونشاط",
       formLabelBudgetPref: "الميزانية المفضلة *",
-      budgetOptionEconomy: "اقتصادية (أماكن إقامة بسيطة، أكل شارع ومواصلات عامة)",
-      budgetOptionModerate: "متوسطة / مريحة (فنادق عائلية، مطاعم ممتازة، بطاقات سياحية)",
-      budgetOptionLuxury: "فاخرة / مميزة (فنادق 5 نجوم، تجارب راقية، سيارات خاصة)",
-      formLabelStartDate: "تاريخ البداية",
-      formLabelSpecialNotes: "تفضيلات خاصة / متطلبات سهولة الوصول",
       btnCancel: "إلغاء",
       btnGeneratePlan: "توليد خطة الرحلة المتكاملة",
-      completed: "مكتمل",
-      markCompleted: "تحديد كمكتمل",
-      btnSwap: "تبديل",
-      btnBook: "معلومات الحجز",
-      btnSelectThis: "اختيار هذا البديل",
-      perNight: "/ ليلة",
       btnLogin: "تسجيل الدخول",
       btnRegister: "إنشاء حساب",
       btnLogout: "تسجيل الخروج",
-      welcomeUser: "مرحباً،"
+      footerText: "نصمم رحلات مخصصة ومتكيفة مع الطقس حول العالم."
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -363,114 +167,26 @@
       tabItinerary: "Itinerario Día a Día",
       tabStays: "Alojamientos Recomendados",
       tabBudget: "Presupuesto y Costos",
-      tabCustomize: "Modificar y Personalizar",
-      tabPacking: "Lista de Equipaje",
-      btnAdjustPace: "Ajustar Ritmo",
-      btnPrint: "Imprimir / PDF",
       labelNeighborhoodCluster: "Agrupación Geográfica del Barrio",
-      transitOptimizedSubtext: "Actividades agrupadas en 1.2 km para minimizar traslados familiares.",
+      transitOptimizedSubtext: "Actividades agrupadas en 1.2 km para minimizar traslados.",
       labelWeatherAdaptation: "Plan de Adaptación al Clima",
-      customizePlanTitle: "Personalizar Este Día",
-      customizePlanSubtitle: "Cambia actividades, sustituye restaurantes o consulta enlaces de reserva.",
-      actionSwapActivity: "Cambiar Actividad",
-      actionSwapActivityDesc: "Descubre atracciones alternativas en este barrio",
-      actionChangeRestaurant: "Cambiar Restaurante",
-      actionChangeRestaurantDesc: "Elige opciones locales, vegetarianas o aptas para niños",
-      actionAdjustPace: "Ajustar Ritmo del Día",
-      actionAdjustPaceDesc: "Elige entre relajado, equilibrado o intenso",
-      actionBookingGuide: "Guía y Enlaces de Reserva",
-      actionBookingGuideDesc: "Pases oficiales, tarjetas de transporte y reservas directas",
-      staysHeaderTitle: "Lugares Recomendados para Hospedarse",
-      staysHeaderSubtitle: "Alojamientos seleccionados según tamaño del grupo, edades y presupuesto.",
-      filterBy: "Filtrar por:",
-      filterAll: "Todas las recomendaciones",
-      filterFamilySuites: "Suites Familiares",
-      filterAccessible: "Accesible para sillas y carriolas",
-      filterCentral: "Cerca del Transporte",
-      budgetHeaderTitle: "Estimación de Costos y Presupuesto",
-      budgetHeaderSubtitle: "Desglose claro de hotel, gastronomía local, entradas y transporte.",
-      budgetTierLabel: "Nivel de Presupuesto:",
-      totalEstTripCost: "Costo Total Estimado del Viaje",
-      dailySpendAverage: "Gasto Promedio Diario",
-      perPersonEstimate: "Estimado por Persona",
-      budgetStatus: "Estado del Presupuesto",
-      onTrack: "En Orden",
-      includesAllExpenses: "Incluye alojamiento, comidas, transporte y entradas",
-      perTravelerTotal: "Estimado integral por viajero",
-      alignedWithTier: "Alineado con tu nivel de confort seleccionado",
-      categoryBreakdownTitle: "Distribución por Categorías",
-      catLodging: "Alojamiento",
-      catDining: "Comida Local",
-      catTickets: "Atracciones y Entradas",
-      catTransit: "Transporte Local",
-      dailyCostBreakdownTitle: "Desglose de Gasto Diario",
-      thDay: "Día",
-      thNeighborhood: "Zona / Barrio",
-      thMeals: "Comidas y Gastronomía",
-      thTickets: "Atracciones y Boletos",
-      thTransit: "Transporte",
-      thDailyTotal: "Total Diario",
-      customizeHeaderTitle: "Estudio de Personalización TripCraft",
-      customizeHeaderSubtitle: "Adapta el itinerario a la energía y preferencias de tu grupo.",
-      paceControlTitle: "Ritmo y Frecuencia",
-      paceControlSubtitle: "Ajusta la densidad de actividades para el bienestar de todos.",
-      paceRelaxedName: "🌿 Relajado y sin prisas",
-      paceRelaxedTag: "Familias y Mayores",
-      paceRelaxedDesc: "Mañanas tardías, máximo 2 actividades diarias y descansos en cafés.",
-      paceBalancedName: "⚖️ Equilibrado y Curado",
-      paceBalancedTag: "Recomendado",
-      paceBalancedDesc: "Exploración matutina y vespertina con tardes flexibles y cercanía.",
-      pacePackedName: "⚡ Intenso y Dinámico",
-      pacePackedTag: "Exploradores Activos",
-      pacePackedDesc: "Comienzo temprano, 4-5 visitas principales y máxima aventura.",
-      btnApplyPace: "Aplicar Ritmo al Itinerario",
-      swapConsoleTitle: "Cambiar Actividades o Restaurantes",
-      swapConsoleSubtitle: "Selecciona cualquier horario para ver alternativas en la misma zona.",
-      labelTargetDay: "Seleccionar Día a Modificar",
-      labelTimeSlot: "Horario a Cambiar",
-      slotMorning: "Actividad Matutina",
-      slotLunch: "Almuerzo y Comida Local",
-      slotAfternoon: "Actividad de Tarde",
-      slotEvening: "Paseo Nocturno y Cena",
-      labelCuratedAlternates: "Alternativas Seleccionadas:",
-      bookingGuidanceTitle: "Guía de Reserva Oficial",
-      bookingGuidanceSubtitle: "Evita sobreprecios de intermediarios con enlaces oficiales.",
-      packingHeaderTitle: "Equipaje Inteligente",
-      packingHeaderSubtitle: "Lista adaptada al clima, edades del grupo y actividades.",
-      packed: "Empacado",
-      footerText: "Diseñando viajes personalizados y adaptados al clima en todo el mundo.",
-      footerLangSupport: "Compatible con todos los idiomas • Enfoque familiar y accesible",
-      modalNewTripTitle: "Planificar un Nuevo Viaje Personalizado",
-      formLabelDestination: "Ciudad y País de Destino *",
-      formLabelDuration: "Duración (Días) *",
-      formSectionTravelers: "¿Quiénes viajan? (Cantidad y edades)",
-      formLabelAdults: "Adultos (18-64 años)",
-      formLabelChildren: "Niños / Jóvenes (0-17 años)",
-      formLabelSeniors: "Adultos Mayores (65+ años)",
-      formLabelTripType: "Tipo de Visita *",
-      typeFamily: "Vacaciones Familiares (Apto para niños)",
-      typeCulture: "Exploración Cultural e Historia",
-      typeRelaxation: "Relajación y Naturaleza",
-      typeCelebration: "Celebración y Luna de Miel",
-      typeAdventure: "Aventura y Senderismo",
-      formLabelBudgetPref: "Preferencia de Presupuesto *",
-      budgetOptionEconomy: "Económico (Hostales, comida callejera, metro)",
-      budgetOptionModerate: "Moderado / Confort (Hoteles familiares, buenos restaurantes)",
-      budgetOptionLuxury: "Lujo / Premium (Hoteles 5 estrellas, alta cocina, traslados)",
-      formLabelStartDate: "Fecha de Inicio",
-      formLabelSpecialNotes: "Preferencias especiales / Accesibilidad",
-      btnCancel: "Cancelar",
-      btnGeneratePlan: "Generar Plan Completo",
       completed: "Completado",
       markCompleted: "Marcar Listo",
-      btnSwap: "Cambiar",
-      btnBook: "Info Reserva",
-      btnSelectThis: "Elegir este",
-      perNight: "/ noche",
+      modalNewTripTitle: "Planificar un Nuevo Viaje Personalizado",
+      formLabelDestination: "Ciudad y País *",
+      formLabelDuration: "Duración (Días) *",
+      formSectionTravelers: "¿Quiénes viajan?",
+      formLabelAdults: "Adultos (18-64)",
+      formLabelChildren: "Niños (0-17)",
+      formLabelSeniors: "Mayores (65+)",
+      formLabelTripType: "Tipo de Visita *",
+      formLabelBudgetPref: "Presupuesto *",
+      btnCancel: "Cancelar",
+      btnGeneratePlan: "Generar Plan Completo",
       btnLogin: "Iniciar Sesión",
       btnRegister: "Registrarse",
       btnLogout: "Cerrar Sesión",
-      welcomeUser: "Bienvenido,"
+      footerText: "Diseñando viajes personalizados en todo el mundo."
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -483,114 +199,26 @@
       tabItinerary: "Itinéraire Jour par Jour",
       tabStays: "Hébergements Recommandés",
       tabBudget: "Estimations & Budget",
-      tabCustomize: "Modifier & Personnaliser",
-      tabPacking: "Liste de Bagages",
-      btnAdjustPace: "Ajuster le Rythme",
-      btnPrint: "Imprimer / PDF",
       labelNeighborhoodCluster: "Regroupement Géographique du Quartier",
-      transitOptimizedSubtext: "Activités regroupées à moins de 1,2 km pour limiter les trajets en famille.",
+      transitOptimizedSubtext: "Activités regroupées à moins de 1,2 km.",
       labelWeatherAdaptation: "Plan d'Adaptation Météorologique",
-      customizePlanTitle: "Personnaliser Cette Journée",
-      customizePlanSubtitle: "Changez une activité, remplacez un restaurant ou consultez les liens de réservation.",
-      actionSwapActivity: "Remplacer une Activité",
-      actionSwapActivityDesc: "Consultez les alternatives dans le même quartier",
-      actionChangeRestaurant: "Changer de Restaurant",
-      actionChangeRestaurantDesc: "Choisissez un restaurant local adapté aux enfants ou végétarien",
-      actionAdjustPace: "Ajuster le Rythme",
-      actionAdjustPaceDesc: "Passez d'un rythme détendu à équilibré ou intense",
-      actionBookingGuide: "Guide & Liens de Réservation",
-      actionBookingGuideDesc: "Pass officiels, cartes de transport et réservations directes",
-      staysHeaderTitle: "Hébergements Recommandés",
-      staysHeaderSubtitle: "Logements adaptés à la taille de votre groupe, aux âges et au budget.",
-      filterBy: "Filtrer par :",
-      filterAll: "Toutes les recommandations",
-      filterFamilySuites: "Suites Familiales",
-      filterAccessible: "Poussettes & Fauteuils Roulants",
-      filterCentral: "Proche des Transports",
-      budgetHeaderTitle: "Estimations des Coûts & Budget",
-      budgetHeaderSubtitle: "Détail clair des coûts d'hébergement, repas locaux, billets et transports.",
-      budgetTierLabel: "Niveau de Budget :",
-      totalEstTripCost: "Coût Total Estimé du Voyage",
-      dailySpendAverage: "Dépense Moyenne Quotidienne",
-      perPersonEstimate: "Estimation par Personne",
-      budgetStatus: "Santé du Budget",
-      onTrack: "En Bonne Voie",
-      includesAllExpenses: "Comprend hébergement, repas, transports et billets",
-      perTravelerTotal: "Estimation complète par voyageur",
-      alignedWithTier: "Conforme à votre niveau de confort choisi",
-      categoryBreakdownTitle: "Répartition par Catégorie",
-      catLodging: "Hébergement",
-      catDining: "Restauration Locale",
-      catTickets: "Attractions & Visites",
-      catTransit: "Transports Locaux",
-      dailyCostBreakdownTitle: "Détail des Dépenses par Jour",
-      thDay: "Jour",
-      thNeighborhood: "Quartier",
-      thMeals: "Repas & Spécialités",
-      thTickets: "Attractions & Billets",
-      thTransit: "Transports",
-      thDailyTotal: "Total Journalier",
-      customizeHeaderTitle: "Studio de Personnalisation TripCraft",
-      customizeHeaderSubtitle: "Ajustez le voyage selon l'énergie de votre famille et vos envies.",
-      paceControlTitle: "Rythme & Cadence Quotidienne",
-      paceControlSubtitle: "Adaptez la densité des visites au bien-être de chacun.",
-      paceRelaxedName: "🌿 Détendu & Serein",
-      paceRelaxedTag: "Famille & Aînés",
-      paceRelaxedDesc: "Matinées calmes, 2 visites par jour maximum et pauses gourmandes.",
-      paceBalancedName: "⚖️ Équilibré & Soigné",
-      paceBalancedTag: "Recommandé",
-      paceBalancedDesc: "Exploration matin et après-midi avec soirées libres et visites proches.",
-      pacePackedName: "⚡ Intense & Actif",
-      pacePackedTag: "Explorateurs Énergiques",
-      pacePackedDesc: "Départ matinal, 4 à 5 visites majeures par jour et découverte maximale.",
-      btnApplyPace: "Appliquer le Rythme",
-      swapConsoleTitle: "Remplacer Activités ou Restaurants",
-      swapConsoleSubtitle: "Sélectionnez un créneau pour voir des alternatives immédiates dans le quartier.",
-      labelTargetDay: "Sélectionner le Jour",
-      labelTimeSlot: "Créneau à Remplacer",
-      slotMorning: "Activité du Matin",
-      slotLunch: "Déjeuner & Spécialités",
-      slotAfternoon: "Activité de l'Après-midi",
-      slotEvening: "Soirée & Dîner",
-      labelCuratedAlternates: "Alternatives Recommandées :",
-      bookingGuidanceTitle: "Conseils & Liens de Réservation Directe",
-      bookingGuidanceSubtitle: "Évitez les surcoûts des intermédiaires avec les portails officiels.",
-      packingHeaderTitle: "Préparation des Bagages Intelligente",
-      packingHeaderSubtitle: "Liste adaptée à la météo, à l'âge des voyageurs et aux visites prévues.",
-      packed: "Préparé",
-      footerText: "Création de voyages personnalisés et adaptés à la météo dans le monde entier.",
-      footerLangSupport: "Compatible avec toutes les langues • Axé sur la famille et l'accessibilité",
-      modalNewTripTitle: "Créer un Nouveau Voyage Personnalisé",
-      formLabelDestination: "Ville & Pays de Destination *",
-      formLabelDuration: "Durée (Jours) *",
-      formSectionTravelers: "Qui voyage ? (Composition du groupe & âges)",
-      formLabelAdults: "Adultes (18-64 ans)",
-      formLabelChildren: "Enfants / Ados (0-17 ans)",
-      formLabelSeniors: "Seniors (65+ ans)",
-      formLabelTripType: "Type de Séjour *",
-      typeFamily: "Vacances en Famille (Adapté aux enfants)",
-      typeCulture: "Découverte Culturelle & Histoire",
-      typeRelaxation: "Détente, Paysages & Bien-être",
-      typeCelebration: "Célébration & Voyage de Noces",
-      typeAdventure: "Aventure & Randonnée",
-      formLabelBudgetPref: "Préférence Budgétaire *",
-      budgetOptionEconomy: "Économique (Auberges, cuisine de rue, métro)",
-      budgetOptionModerate: "Modéré / Confort (Hôtels familiaux, bons restaurants)",
-      budgetOptionLuxury: "Luxe / Prestige (Hôtels 5 étoiles, gastronomie, transferts)",
-      formLabelStartDate: "Date de Début",
-      formLabelSpecialNotes: "Préférences particulières / Accessibilité",
-      btnCancel: "Annuler",
-      btnGeneratePlan: "Générer le Plan Complet",
       completed: "Effectué",
       markCompleted: "Marquer comme fait",
-      btnSwap: "Remplacer",
-      btnBook: "Info Réservation",
-      btnSelectThis: "Choisir cet élément",
-      perNight: "/ nuit",
+      modalNewTripTitle: "Créer un Nouveau Voyage",
+      formLabelDestination: "Ville & Pays *",
+      formLabelDuration: "Durée (Jours) *",
+      formSectionTravelers: "Qui voyage ?",
+      formLabelAdults: "Adultes (18-64)",
+      formLabelChildren: "Enfants (0-17)",
+      formLabelSeniors: "Seniors (65+)",
+      formLabelTripType: "Type de Séjour *",
+      formLabelBudgetPref: "Préférence Budgétaire *",
+      btnCancel: "Annuler",
+      btnGeneratePlan: "Générer le Plan",
       btnLogin: "Connexion",
       btnRegister: "S'inscrire",
       btnLogout: "Déconnexion",
-      welcomeUser: "Bienvenue,"
+      footerText: "Création de voyages personnalisés dans le monde entier."
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -603,114 +231,26 @@
       tabItinerary: "日別旅程表",
       tabStays: "おすすめ宿泊先",
       tabBudget: "予算と費用見積もり",
-      tabCustomize: "プランの変更・調整",
-      tabPacking: "持ち物チェックリスト",
-      btnAdjustPace: "ペース調整",
-      btnPrint: "印刷 / PDF",
       labelNeighborhoodCluster: "地域・エリアグループ",
-      transitOptimizedSubtext: "徒歩や移動時間を最小限に抑えるため、半径1.2km以内で活動をまとめています。",
+      transitOptimizedSubtext: "移動時間を最小限に抑えるため、半径1.2km以内で活動をまとめています。",
       labelWeatherAdaptation: "気候・天候適応プラン",
-      customizePlanTitle: "この日のプランをカスタマイズ",
-      customizePlanSubtitle: "観光スポットの入れ替え、食事場所の変更、ペース調整を行えます。",
-      actionSwapActivity: "アクティビティの入れ替え",
-      actionSwapActivityDesc: "同じエリア内のおすすめ観光スポットから選択",
-      actionChangeRestaurant: "食事処の変更",
-      actionChangeRestaurantDesc: "お子様連れ、ベジタリアン、郷土料理店から選択",
-      actionAdjustPace: "旅のペースを調整",
-      actionAdjustPaceDesc: "ゆったり、バランス、アクティブから選択",
-      actionBookingGuide: "公式予約案内＆リンク",
-      actionBookingGuideDesc: "公式チケット、交通ICカード、直接予約サイト",
-      staysHeaderTitle: "おすすめの宿泊施設",
-      staysHeaderSubtitle: "人数、年齢層、バリアフリー対応、ご予算に合わせた厳選ホテルです。",
-      filterBy: "絞り込み:",
-      filterAll: "すべてのおすすめ",
-      filterFamilySuites: "ファミリールーム",
-      filterAccessible: "バリアフリー・ベビーカー対応",
-      filterCentral: "駅近・交通至便",
-      budgetHeaderTitle: "費用見積もりと予算計画",
-      budgetHeaderSubtitle: "宿泊費、郷土料理、観光入場料、地域交通費の明確な内訳です。",
-      budgetTierLabel: "予算ランク:",
-      totalEstTripCost: "推定旅行総費用",
-      dailySpendAverage: "1日の平均支出",
-      perPersonEstimate: "1人あたりの見積もり",
-      budgetStatus: "予算状況",
-      onTrack: "順調（予算内）",
-      includesAllExpenses: "宿泊・食事・交通・入場料を含む",
-      perTravelerTotal: "旅行者1人あたりの総計目安",
-      alignedWithTier: "選択された快適ランクに合致しています",
-      categoryBreakdownTitle: "支出カテゴリ内訳",
-      catLodging: "宿泊費",
-      catDining: "郷土料理・食事",
-      catTickets: "観光・入場料",
-      catTransit: "地域交通費",
-      dailyCostBreakdownTitle: "日別の費用内訳",
-      thDay: "日程",
-      thNeighborhood: "エリア",
-      thMeals: "食事・ご当地グルメ",
-      thTickets: "観光・体験",
-      thTransit: "交通費",
-      thDailyTotal: "日計",
-      customizeHeaderTitle: "TripCraft カスタマイズスタジオ",
-      customizeHeaderSubtitle: "旅行者の体力、食事の好み、旅行テンポに合わせて旅程を自在に調整できます。",
-      paceControlTitle: "旅のペースとテンポ",
-      paceControlSubtitle: "ご家族の体力や旅行スタイルに合わせて予定の密度を調整します。",
-      paceRelaxedName: "🌿 ゆったり・のんびり",
-      paceRelaxedTag: "ファミリー＆シニア向け",
-      paceRelaxedDesc: "朝はゆっくり出発。1日最大2箇所の見学で、カフェ休憩を多めに取ります。",
-      paceBalancedName: "⚖️ バランス重視",
-      paceBalancedTag: "おすすめ",
-      paceBalancedDesc: "午前と午後にバランスよく観光し、夜は自由度の高いスケジュールです。",
-      pacePackedName: "⚡ アクティブ満喫",
-      pacePackedTag: "アクティブ派向け",
-      pacePackedDesc: "朝早くから夜まで、主要スポットを巡り尽くす充実の旅程です。",
-      btnApplyPace: "ペースを旅程に適用",
-      swapConsoleTitle: "観光地や飲食店の入れ替え",
-      swapConsoleSubtitle: "変更したい時間帯を選ぶと、近隣の魅力的な代替案が提案されます。",
-      labelTargetDay: "変更する日程を選択",
-      labelTimeSlot: "変更する時間帯",
-      slotMorning: "午前の観光",
-      slotLunch: "昼食・ご当地グルメ",
-      slotAfternoon: "午後の観光",
-      slotEvening: "夜の観光＆夕食",
-      labelCuratedAlternates: "おすすめの代替候補:",
-      bookingGuidanceTitle: "公式予約案内＆リンク",
-      bookingGuidanceSubtitle: "公式予約ポータルや交通パスを利用して、安心・お得に予約できます。",
-      packingHeaderTitle: "スマート持ち物チェックリスト",
-      packingHeaderSubtitle: "現地の天候、旅行者の年齢層、訪問先に合わせた安心リストです。",
-      packed: "準備済み",
-      footerText: "世界中の旅行者に寄り添う、天候適応型の旅行計画をデザインします。",
-      footerLangSupport: "多言語対応 • ファミリー＆バリアフリー重視",
+      completed: "完了",
+      markCompleted: "完了にする",
       modalNewTripTitle: "新しい旅行プランを作成",
       formLabelDestination: "旅行先の都市・国 *",
       formLabelDuration: "旅行日数 *",
-      formSectionTravelers: "旅行者の人数と内訳（年齢層）",
+      formSectionTravelers: "旅行者の人数",
       formLabelAdults: "大人 (18-64歳)",
-      formLabelChildren: "子供・若者 (0-17歳)",
+      formLabelChildren: "子供 (0-17歳)",
       formLabelSeniors: "シニア (65歳以上)",
       formLabelTripType: "旅行の目的 *",
-      typeFamily: "家族旅行 (お子様歓迎)",
-      typeCulture: "歴史・文化探訪",
-      typeRelaxation: "リゾート・温泉・癒やし",
-      typeCelebration: "ハネムーン・記念旅行",
-      typeAdventure: "ハイキング・アクティビティ",
       formLabelBudgetPref: "予算設定 *",
-      budgetOptionEconomy: "エコノミー (ホステル、B級グルメ、公共交通)",
-      budgetOptionModerate: "コンフォート (ファミリーホテル、人気レストラン)",
-      budgetOptionLuxury: "ラグジュアリー (5つ星、高級ディナー、専用車)",
-      formLabelStartDate: "開始日",
-      formLabelSpecialNotes: "特別リクエスト・バリアフリー",
       btnCancel: "キャンセル",
       btnGeneratePlan: "旅行プランを自動生成",
-      completed: "完了",
-      markCompleted: "完了にする",
-      btnSwap: "変更する",
-      btnBook: "予約案内",
-      btnSelectThis: "これに変更",
-      perNight: "/ 泊",
       btnLogin: "ログイン",
       btnRegister: "新規登録",
       btnLogout: "ログアウト",
-      welcomeUser: "ようこそ、"
+      footerText: "世界中の旅行者に寄り添う旅行計画をデザインします。"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -723,114 +263,26 @@
       tabItinerary: "Tagesprogramm",
       tabStays: "Empfohlene Unterkünfte",
       tabBudget: "Kosten & Budget",
-      tabCustomize: "Anpassen & Ändern",
-      tabPacking: "Packliste",
-      btnAdjustPace: "Tempo Anpassen",
-      btnPrint: "Drucken / PDF",
       labelNeighborhoodCluster: "Geografischer Stadtteil-Cluster",
-      transitOptimizedSubtext: "Aktivitäten im Umkreis von 1,2 km gebündelt, um Gehzeiten für Familien zu minimieren.",
+      transitOptimizedSubtext: "Aktivitäten im Umkreis von 1,2 km gebündelt.",
       labelWeatherAdaptation: "Wetteranpassungsplan",
-      customizePlanTitle: "Diesen Tag Anpassen",
-      customizePlanSubtitle: "Tauschen Sie Aktivitäten oder Restaurants unkompliziert aus und erhalten Sie Buchungslinks.",
-      actionSwapActivity: "Aktivität Tauschen",
-      actionSwapActivityDesc: "Alternative Highlights im selben Viertel entdecken",
-      actionChangeRestaurant: "Restaurant Ändern",
-      actionChangeRestaurantDesc: "Lokale Lokale für Familien oder Vegetarier wählen",
-      actionAdjustPace: "Tages-Tempo Ändern",
-      actionAdjustPaceDesc: "Wählen Sie zwischen entspannt, ausgewogen und aktiv",
-      actionBookingGuide: "Buchungshilfen & Links",
-      actionBookingGuideDesc: "Offizielle Pässe, Nahverkehrskarten und Direktbuchungen",
-      staysHeaderTitle: "Empfohlene Unterkünfte",
-      staysHeaderSubtitle: "Ausgewählte Hotels passend zu Gruppengröße, Alter und Budget.",
-      filterBy: "Filtern nach:",
-      filterAll: "Alle Empfehlungen",
-      filterFamilySuites: "Familiensuiten",
-      filterAccessible: "Barrierefrei / Kinderwagen",
-      filterCentral: "Verkehrsgünstig",
-      budgetHeaderTitle: "Kostenschätzung & Budget",
-      budgetHeaderSubtitle: "Transparente Kostenaufstellung für Hotel, Verpflegung, Eintritte und Nahverkehr.",
-      budgetTierLabel: "Budget-Klasse:",
-      totalEstTripCost: "Geschätzte Gesamtkosten",
-      dailySpendAverage: "Durchschnittliche Tagesausgaben",
-      perPersonEstimate: "Schätzung pro Person",
-      budgetStatus: "Budget-Status",
-      onTrack: "Im Budget",
-      includesAllExpenses: "Inklusive Hotel, Essen, Nahverkehr und Eintrittskarten",
-      perTravelerTotal: "Gesamtschätzung pro Reisenden",
-      alignedWithTier: "Entspricht Ihrer gewählten Komfortklasse",
-      categoryBreakdownTitle: "Ausgaben nach Kategorien",
-      catLodging: "Unterkunft",
-      catDining: "Lokale Küche",
-      catTickets: "Attraktionen & Eintritte",
-      catTransit: "Nahverkehr",
-      dailyCostBreakdownTitle: "Tägliche Kostenaufstellung",
-      thDay: "Tag",
-      thNeighborhood: "Stadtviertel",
-      thMeals: "Mahlzeiten & Spezialitäten",
-      thTickets: "Sehenswürdigkeiten",
-      thTransit: "Transport",
-      thDailyTotal: "Tagessumme",
-      customizeHeaderTitle: "TripCraft Studio für Anpassungen",
-      customizeHeaderSubtitle: "Passen Sie die Reise flexibel an das Wohlbefinden Ihrer Reisegruppe an.",
-      paceControlTitle: "Tages-Geschwindigkeit & Rhythmus",
-      paceControlSubtitle: "Wählen Sie die Intensität für ein entspanntes Reiseerlebnis.",
-      paceRelaxedName: "🌿 Entspannt & Gemütlich",
-      paceRelaxedTag: "Familien & Senioren",
-      paceRelaxedDesc: "Späterer Start, maximal 2 Programmpunkte pro Tag und viel Zeit für Cafés.",
-      paceBalancedName: "⚖️ Ausgewogen & Kuratiert",
-      paceBalancedTag: "Empfohlen",
-      paceBalancedDesc: "Gute Balance zwischen Vormittags- und Nachmittagszielen mit kurzen Wegen.",
-      pacePackedName: "⚡ Aktiv & Erlebnisreich",
-      pacePackedTag: "Aktive Entdecker",
-      pacePackedDesc: "Früher Start, 4-5 Höhepunkte täglich und maximale Entdeckungen.",
-      btnApplyPace: "Tempo Übernehmen",
-      swapConsoleTitle: "Aktivitäten oder Lokale Tauschen",
-      swapConsoleSubtitle: "Wählen Sie ein Zeitfenster für sofortige Vorschläge im selben Viertel.",
-      labelTargetDay: "Tag Auswählen",
-      labelTimeSlot: "Zeitfenster zum Tauschen",
-      slotMorning: "Vormittags-Aktivität",
-      slotLunch: "Mittagessen & Lokale Küche",
-      slotAfternoon: "Nachmittags-Aktivität",
-      slotEvening: "Abendprogramm & Dinner",
-      labelCuratedAlternates: "Empfohlene Alternativen:",
-      bookingGuidanceTitle: "Offizielle Buchungsanleitungen",
-      bookingGuidanceSubtitle: "Sparen Sie Zwischenhändler-Gebühren durch offizielle Portale.",
-      packingHeaderTitle: "Intelligente Packliste",
-      packingHeaderSubtitle: "Abgestimmt auf Wetter, Altersgruppen und geplante Aktivitäten.",
-      packed: "Gepackt",
-      footerText: "Personalisierte und wetterangepasste Reiseplanung weltweit.",
-      footerLangSupport: "Kompatibel mit allen Sprachen • Familien- & Barrierefreiheitsfokus",
+      completed: "Erledigt",
+      markCompleted: "Als erledigt markieren",
       modalNewTripTitle: "Neue Reise Planen",
       formLabelDestination: "Zielstadt & Land *",
       formLabelDuration: "Dauer (Tage) *",
-      formSectionTravelers: "Wer reist mit? (Personen & Altersgruppen)",
+      formSectionTravelers: "Wer reist mit?",
       formLabelAdults: "Erwachsene (18-64 J.)",
-      formLabelChildren: "Kinder / Jugendliche (0-17 J.)",
+      formLabelChildren: "Kinder (0-17 J.)",
       formLabelSeniors: "Senioren (65+ J.)",
       formLabelTripType: "Art der Reise *",
-      typeFamily: "Familienurlaub (Kinderfreundlich)",
-      typeCulture: "Kultur & Geschichte",
-      typeRelaxation: "Erholung & Wellness",
-      typeCelebration: "Feier & Flitterwochen",
-      typeAdventure: "Abenteuer & Wandern",
       formLabelBudgetPref: "Budget-Präferenz *",
-      budgetOptionEconomy: "Günstig (Hostels, Streetfood, Nahverkehr)",
-      budgetOptionModerate: "Komfort (Familienhotels, Restaurants)",
-      budgetOptionLuxury: "Luxus (5-Sterne-Hotels, Gourmet, Chauffeur)",
-      formLabelStartDate: "Startdatum",
-      formLabelSpecialNotes: "Besondere Wünsche / Barrierefreiheit",
       btnCancel: "Abbrechen",
-      btnGeneratePlan: "Kompletten Reiseplan Erstellen",
-      completed: "Erledigt",
-      markCompleted: "Als erledigt markieren",
-      btnSwap: "Tauschen",
-      btnBook: "Buchungs-Info",
-      btnSelectThis: "Auswählen",
-      perNight: "/ Nacht",
+      btnGeneratePlan: "Reiseplan Erstellen",
       btnLogin: "Anmelden",
       btnRegister: "Registrieren",
       btnLogout: "Abmelden",
-      welcomeUser: "Willkommen,"
+      footerText: "Personalisierte Reiseplanung weltweit."
     }
   };
 
@@ -863,7 +315,7 @@
   }
 
   // ==========================================================================
-  // 4. Preset Rich Trips Data Store
+  // 4. Preset Complete Trips Dataset (5 Days)
   // ==========================================================================
   const PRESET_TRIPS = [
     {
@@ -883,11 +335,9 @@
         summary: '4 Travelers (2 Adults, 2 Kids)'
       },
       budgetTier: 'moderate',
-      pace: 'balanced',
       weather: {
         temp: '24°C',
         condition: 'Clear & Mild',
-        icon: '☀️',
         notes: 'Weather Optimized: Cooler morning temple visits, midday indoor science/ac activities, sunset river breezes.'
       },
       stays: [
@@ -903,6 +353,19 @@
           features: ['👶 Stroller-Friendly', '♿ Elevator & Level Entry', '👨‍👩‍👧 Family Kitchen', '📍 2-min Walk to Asakusa Station'],
           bookingUrl: 'https://mimaruhotels.com/en/hotel/asakusa-station/',
           description: 'Spacious Japanese apartment hotel tailor-made for families with separate living spaces, coin laundry, and immediate access to the Ginza line.'
+        },
+        {
+          id: 'stay-hotel-gracery',
+          name: 'Hotel Gracery Shinjuku',
+          type: 'Modern Hotel',
+          neighborhood: 'Shinjuku',
+          rating: '4.78',
+          pricePerNight: 190,
+          category: 'central',
+          fitBanner: '✓ Fits 4 Guests (Connecting Rooms Available)',
+          features: ['🦖 Iconic Godzilla Head View', '📍 5-min Walk to Shinjuku Station', '🍳 On-site Breakfast Buffet'],
+          bookingUrl: 'https://gracery.com/shinjuku/',
+          description: 'High-rise modern stay located in central Shinjuku close to major transit, dining hubs, and entertainment venues.'
         }
       ],
       days: [
@@ -951,12 +414,191 @@
             cost: 50,
             completed: false
           }
+        },
+        {
+          dayNumber: 2,
+          dateLabel: 'Day 2',
+          neighborhood: 'Ueno Park, Museums & Ameyoko Market',
+          weatherPlan: '🌳 Shade Protected Morning: Ueno Cultural Gardens • 🏛️ Midday Cool: National Science Museum',
+          morning: {
+            dualName: '上野恩賜公園 (Ueno Imperial Park & Shinobazu Pond)',
+            category: 'Nature & Stroll',
+            time: '09:00 - 11:00',
+            desc: 'Expansive public park with Lotus ponds, Ueno Toshogu Shrine, and shaded walking paths.',
+            weatherBadge: '🌳 Shaded Morning Stroll',
+            accessibility: ['👶 Paved Paths throughout'],
+            cost: 0,
+            completed: false
+          },
+          lunch: {
+            dualName: 'アメ横商店街 (Ameyoko Market Street Eats)',
+            category: 'Street Food & Local Bites',
+            time: '11:30 - 13:00',
+            desc: 'Bustling open-air street market known for fresh seafood bowls, yakitori skewers, and fresh fruit stalls.',
+            weatherBadge: '☀️ Covered Arcade Paths',
+            accessibility: ['👨‍👩‍👧 Lively Street Food'],
+            cost: 35,
+            completed: false
+          },
+          afternoon: {
+            dualName: '国立科学博物館 (National Museum of Nature and Science)',
+            category: 'Family Interactive Museum',
+            time: '13:30 - 16:30',
+            desc: 'Interactive 360-degree theater, life-size dinosaur skeletons, and hands-on physics exhibits.',
+            weatherBadge: '❄️ Fully Climate Controlled',
+            accessibility: ['♿ Elevators & Restrooms'],
+            cost: 30,
+            completed: false
+          },
+          evening: {
+            dualName: '伊豆栄 本店 (Izuei Honten Unagi Dinner)',
+            category: 'Traditional Dining',
+            time: '17:30 - 19:30',
+            desc: 'Historic eel restaurant operating for over 260 years serving tender grilled unagi over rice.',
+            weatherBadge: '🌙 Cozy Indoor Dining',
+            accessibility: ['♿ Elevator Access'],
+            cost: 80,
+            completed: false
+          }
+        },
+        {
+          dayNumber: 3,
+          dateLabel: 'Day 3',
+          neighborhood: 'Meiji Jingu, Harajuku & Shibuya Crossing',
+          weatherPlan: '🌲 Dense Forest Canopy Morning • 🛍️ Midday Shopping & Indoor Eats • 🌆 Iconic Neon Crossing',
+          morning: {
+            dualName: '明治神宮 (Meiji Shrine & Forest Sanctuary)',
+            category: 'Cultural Landmark',
+            time: '09:00 - 11:00',
+            desc: 'Serene Shinto shrine surrounded by a 170-acre evergreen forest with 100,000 trees.',
+            weatherBadge: '🌲 Tree Shaded Pathways',
+            accessibility: ['👶 Wide Gravel Paths'],
+            cost: 0,
+            completed: false
+          },
+          lunch: {
+            dualName: '原宿ぐんちゃん (Takeshita Street & Crepe Tasting)',
+            category: 'Youth Culture & Snacks',
+            time: '11:30 - 13:00',
+            desc: 'Explore colorful boutiques and taste Harajuku’s famous strawberry whipped cream dessert crepes.',
+            weatherBadge: '☀️ Pedestrian Only Zone',
+            accessibility: ['👨‍👩‍👧 Kid Favorite Treats'],
+            cost: 25,
+            completed: false
+          },
+          afternoon: {
+            dualName: 'SHIBUYA SKY & 渋谷スクランブル交差点 (Shibuya Sky Observation Deck)',
+            category: 'Panoramic Viewpoint',
+            time: '14:00 - 17:00',
+            desc: 'Open-air rooftop 229 meters above Shibuya Crossing offering 360-degree views.',
+            weatherBadge: '🌤️ High Altitude Views',
+            accessibility: ['♿ Full Elevator Access'],
+            cost: 55,
+            completed: false
+          },
+          evening: {
+            dualName: '渋谷横丁 (Shibuya Yokocho Regional Food Hall)',
+            category: 'Gourmet Food Alley',
+            time: '18:00 - 20:30',
+            desc: 'Vibrant indoor alley in Miyashita Park showcasing specialty dishes from all 47 Japanese prefectures.',
+            weatherBadge: '🌆 Covered Vibrant Alley',
+            accessibility: ['♿ Level Access'],
+            cost: 60,
+            completed: false
+          }
+        },
+        {
+          dayNumber: 4,
+          dateLabel: 'Day 4',
+          neighborhood: 'Odaiba Bayfront, teamLab & Giant Gundam',
+          weatherPlan: '🌊 Bay Breeze & Indoor Digital Art Realm',
+          morning: {
+            dualName: 'teamLab Planets TOKYO (チームラボプラネッツ)',
+            category: 'Digital Art Immersive',
+            time: '09:30 - 12:00',
+            desc: 'Walk barefoot through water and knee-deep mirror rooms surrounded by floating digital flowers.',
+            weatherBadge: '❄️ Indoor Multi-Sensory Environment',
+            accessibility: ['♿ Wheelchair Accessible Routes Available'],
+            cost: 95,
+            completed: false
+          },
+          lunch: {
+            dualName: 'アクアシティお台場 (Aqua City Seafood & Ramen Park)',
+            category: 'Oceanfront Dining',
+            time: '12:30 - 14:00',
+            desc: 'Overlooks the Tokyo Rainbow Bridge while dining at the Tokyo Ramen Kokugikan food court.',
+            weatherBadge: '🏛️ Air-Conditioned Waterfront Mall',
+            accessibility: ['👶 Full Mall Stroller Access'],
+            cost: 40,
+            completed: false
+          },
+          afternoon: {
+            dualName: '実物大ユニコーンガンダム立像 (Life-Sized Unicorn Gundam Statue)',
+            category: 'Anime Landmark & Plaza',
+            time: '14:30 - 16:30',
+            desc: '19.7-meter tall mech transformer statue outside DiverCity Tokyo Plaza with transformation light shows.',
+            weatherBadge: '🌊 Sea Breeze Plaza',
+            accessibility: ['👶 Smooth Plaza Paving'],
+            cost: 0,
+            completed: false
+          },
+          evening: {
+            dualName: 'お台場海浜公園 (Odaiba Seaside Park Sunset Walk)',
+            category: 'Sunset Promenade',
+            time: '17:00 - 19:30',
+            desc: 'Watch the sun set behind Tokyo Tower and the Rainbow Bridge from the sandy shoreline.',
+            weatherBadge: '🌆 Cool Bay Evening Breeze',
+            accessibility: ['👶 Boardwalk Access'],
+            cost: 35,
+            completed: false
+          }
+        },
+        {
+          dayNumber: 5,
+          dateLabel: 'Day 5',
+          neighborhood: 'Imperial Palace Gardens & Ginza Shopping',
+          weatherPlan: '🏰 Shaded Historic Moats • 🛍️ Pedestrian Paradise Promenade',
+          morning: {
+            dualName: '皇居東御苑 (Imperial Palace East Gardens & Nijubashi Bridge)',
+            category: 'Imperial History & Nature',
+            time: '09:00 - 11:30',
+            desc: 'Walk through the former Edo Castle guardhouses, massive stone walls, and Japanese landscaped gardens.',
+            weatherBadge: '🏰 Shaded Moat Walks',
+            accessibility: ['👶 Gentle Gravel Slopes'],
+            cost: 0,
+            completed: false
+          },
+          lunch: {
+            dualName: '銀座 篝 (Ginza Kagari Michelin Tori Paitan Ramen)',
+            category: 'Gourmet Ramen Pick',
+            time: '12:00 - 13:30',
+            desc: 'Renowned for rich, creamy white chicken broth ramen topped with seasonal roasted vegetables.',
+            weatherBadge: '❄️ Indoor Cozy Dining',
+            accessibility: ['👨‍👩‍👧 Counter & Table Seating'],
+            cost: 40,
+            completed: false
+          },
+          afternoon: {
+            dualName: '銀座歩行者天国 (Ginza Chuo-dori Pedestrian Zone)',
+            category: 'Architecture & Shopping',
+            time: '14:00 - 16:30',
+            desc: 'Tokyo’s premier luxury district where the main avenue becomes pedestrian-only on weekends.',
+            weatherBadge: '🛍️ Open-Air Pedestrian Street',
+            accessibility: ['👶 Wide Flat Sidewalks'],
+            cost: 20,
+            completed: false
+          },
+          evening: {
+            dualName: '銀座 Mitsukoshi Rooftop Garden & Farewell Dinner',
+            category: 'Rooftop Lounge',
+            time: '17:00 - 20:00',
+            desc: 'Relax at the rooftop garden followed by a farewell dinner at Ginza Din Tai Fung.',
+            weatherBadge: '🌆 Sunset Skyline Views',
+            accessibility: ['♿ Elevator Access'],
+            cost: 75,
+            completed: false
+          }
         }
-      ],
-      packingList: [
-        { id: 'p1', item: 'Comfortable walking sneakers (10k+ steps/day)', checked: true, category: 'Footwear' },
-        { id: 'p2', item: 'Universal Type A/B power adapters & power bank', checked: false, category: 'Electronics' },
-        { id: 'p3', item: 'Digital Suica / Pasmo transit pass loaded on Apple/Google Wallet', checked: true, category: 'Essentials' }
       ],
       budgetBreakdown: {
         totalTripCost: 2450,
@@ -976,33 +618,30 @@
 
   let currentTripIndex = 0;
   let activeDayIndex = 0;
-  let activeStayFilter = 'all';
 
   function getCurrentTrip() {
     return PRESET_TRIPS[currentTripIndex] || PRESET_TRIPS[0];
   }
 
   // ==========================================================================
-  // 5. Toast Notification Engine
+  // 5. Toast Notifications
   // ==========================================================================
   function showToast(message) {
     let stack = document.getElementById('toastStack');
     if (!stack) {
       stack = document.createElement('div');
       stack.id = 'toastStack';
-      stack.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none;';
       document.body.appendChild(stack);
     }
 
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.style.cssText = 'background: #1e293b; color: #fff; padding: 12px 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; font-size: 0.9rem; pointer-events: auto; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);';
+    toast.style.cssText = 'background: var(--bg-secondary); color: var(--text-primary); padding: 12px 18px; border-radius: 8px; box-shadow: var(--shadow-main); display: flex; align-items: center; gap: 8px; font-size: 0.9rem; border: 1px solid var(--border-color);';
     toast.innerHTML = `<span>✨</span><span>${message}</span>`;
     stack.appendChild(toast);
 
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateY(8px)';
       setTimeout(() => toast.remove(), 300);
     }, 2800);
   }
@@ -1010,7 +649,7 @@
   window.showToast = showToast;
 
   // ==========================================================================
-  // 6. Rendering Functions
+  // 6. Core Rendering Functions
   // ==========================================================================
   function populateTripDropdown() {
     const tripSelect = document.getElementById('tripSelect');
@@ -1024,36 +663,34 @@
   function renderTripHero() {
     const trip = getCurrentTrip();
     const backdrop = document.getElementById('heroBackdrop');
-    if (backdrop && trip.heroImage) {
-      backdrop.style.backgroundImage = `url('${trip.heroImage}')`;
-    }
+    if (backdrop && trip.heroImage) backdrop.style.backgroundImage = `url('${trip.heroImage}')`;
 
-    const heroTitle = document.getElementById('heroTitle');
-    if (heroTitle) heroTitle.textContent = trip.title;
+    const title = document.getElementById('heroTitle');
+    if (title) title.textContent = trip.title;
 
-    const heroSubtitle = document.getElementById('heroSubtitle');
-    if (heroSubtitle) heroSubtitle.textContent = trip.subtitle;
+    const subtitle = document.getElementById('heroSubtitle');
+    if (subtitle) subtitle.textContent = trip.subtitle;
 
-    const heroTripType = document.getElementById('heroTripType');
-    if (heroTripType) heroTripType.textContent = trip.tripType;
+    const type = document.getElementById('heroTripType');
+    if (type) type.textContent = trip.tripType;
 
-    const heroDuration = document.getElementById('heroDuration');
-    if (heroDuration) heroDuration.textContent = `${trip.durationDays} Days`;
+    const duration = document.getElementById('heroDuration');
+    if (duration) duration.textContent = `${trip.durationDays} Days`;
 
-    const heroWeatherText = document.getElementById('heroWeatherText');
-    if (heroWeatherText) heroWeatherText.textContent = `${trip.weather.temp} • Weather Optimized`;
+    const weather = document.getElementById('heroWeatherText');
+    if (weather) weather.textContent = `${trip.weather.temp} • Weather Optimized`;
 
-    const metricTravelers = document.getElementById('metricTravelers');
-    if (metricTravelers) metricTravelers.textContent = trip.travelers.summary;
+    const travelers = document.getElementById('metricTravelers');
+    if (travelers) travelers.textContent = trip.travelers.summary;
 
-    const metricStay = document.getElementById('metricStay');
-    if (metricStay && trip.stays.length) metricStay.textContent = trip.stays[0].name;
+    const stay = document.getElementById('metricStay');
+    if (stay && trip.stays.length) stay.textContent = trip.stays[0].name;
 
-    const metricDailySpend = document.getElementById('metricDailySpend');
-    if (metricDailySpend) metricDailySpend.textContent = `${formatMoney(trip.budgetBreakdown.dailyAverage)} / day`;
+    const spend = document.getElementById('metricDailySpend');
+    if (spend) spend.textContent = `${formatMoney(trip.budgetBreakdown.dailyAverage)} / day`;
 
-    const metricNeighborhood = document.getElementById('metricNeighborhood');
-    if (metricNeighborhood && trip.days.length) metricNeighborhood.textContent = trip.days[0].neighborhood;
+    const district = document.getElementById('metricNeighborhood');
+    if (district && trip.days.length) district.textContent = trip.days[activeDayIndex]?.neighborhood || trip.days[0].neighborhood;
   }
 
   function renderItinerary() {
@@ -1063,12 +700,16 @@
     const trip = getCurrentTrip();
     const day = trip.days[activeDayIndex] || trip.days[0];
 
-    let dayPillsHtml = trip.days.map((d, idx) => `
-      <button class="day-pill-btn ${idx === activeDayIndex ? 'active' : ''}" data-day-index="${idx}" type="button">
-        <span class="pill-day-label">Day ${d.dayNumber}</span>
-        <span class="pill-day-title">${d.neighborhood.split(',')[0]}</span>
-      </button>
-    `).join('');
+    let dayPillsHtml = `
+      <div class="day-pills-row">
+        ${trip.days.map((d, idx) => `
+          <button class="day-pill-btn ${idx === activeDayIndex ? 'active' : ''}" data-day-index="${idx}" type="button">
+            <span class="pill-day-label">Day ${d.dayNumber}</span>
+            <span class="pill-day-title">${d.neighborhood.split(',')[0]}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
 
     const phases = [
       { key: 'morning', label: 'Morning', badgeClass: 'phase-morning' },
@@ -1088,9 +729,7 @@
           </div>
           <div class="slot-content-column">
             <div class="slot-top-row">
-              <div class="slot-name-group">
-                <h3 class="dual-name-title">${slot.dualName}</h3>
-              </div>
+              <h3 class="dual-name-title">${slot.dualName}</h3>
               <span class="slot-category-badge">${slot.category}</span>
             </div>
             <p class="slot-description">${slot.desc}</p>
@@ -1104,10 +743,6 @@
                 <input type="checkbox" class="completion-checkbox" data-slot="${phase.key}" ${slot.completed ? 'checked' : ''}>
                 <span>${slot.completed ? t('completed') : t('markCompleted')}</span>
               </label>
-              <div class="slot-btn-group">
-                <button class="btn btn-sm btn-secondary swap-btn" type="button" data-slot="${phase.key}">${t('btnSwap')}</button>
-                <button class="btn btn-sm btn-secondary book-btn" type="button" onclick="window.showToast('${t('btnBook')}: Direct official reservation link loaded')">${t('btnBook')}</button>
-              </div>
             </div>
           </div>
         </div>
@@ -1115,62 +750,34 @@
     }).join('');
 
     container.innerHTML = `
-      <div class="itinerary-header-bar">
-        <div class="day-pills-scroller">${dayPillsHtml}</div>
+      ${dayPillsHtml}
+      <div class="day-meta-banner">
+        <h2>${day.dateLabel}: ${day.neighborhood}</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.3rem;">${day.weatherPlan}</p>
       </div>
-
-      <div class="day-context-banner">
-        <div class="context-group">
-          <div class="context-icon-wrap geo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-          </div>
-          <div>
-            <div class="context-title">${t('labelNeighborhoodCluster')}</div>
-            <div class="context-value">${day.neighborhood}</div>
-            <div class="context-subtext">${t('transitOptimizedSubtext')}</div>
-          </div>
-        </div>
-        <div class="context-group">
-          <div class="context-icon-wrap weather">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
-          </div>
-          <div>
-            <div class="context-title">${t('labelWeatherAdaptation')}</div>
-            <div class="context-value">${day.weatherPlan}</div>
-          </div>
-        </div>
+      <div class="timeline-cards-container">
+        ${slotsHtml}
       </div>
-
-      <div class="timeline-blocks-wrapper">${slotsHtml}</div>
     `;
 
+    // Attach listeners for Day Pills
     container.querySelectorAll('.day-pill-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        activeDayIndex = parseInt(e.currentTarget.getAttribute('data-day-index'), 10);
+        activeDayIndex = parseInt(btn.getAttribute('data-day-index'), 10);
         renderItinerary();
+        renderTripHero();
       });
     });
 
+    // Attach listeners for Completion Checkboxes
     container.querySelectorAll('.completion-checkbox').forEach(chk => {
       chk.addEventListener('change', (e) => {
-        const slotKey = e.target.getAttribute('data-slot');
-        if (day[slotKey]) {
-          day[slotKey].completed = e.target.checked;
-          renderItinerary();
-          showToast(e.target.checked ? 'Marked as completed' : 'Marked as pending');
-          saveTripToSupabase(trip);
-        }
-      });
-    });
-
-    container.querySelectorAll('.swap-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const slotKey = e.currentTarget.getAttribute('data-slot');
-        const customizeTabBtn = document.querySelector('[data-tab="customize"]');
-        if (customizeTabBtn) customizeTabBtn.click();
-        const slotSelect = document.getElementById('swapSlotSelect');
-        if (slotSelect) slotSelect.value = slotKey;
-        showToast(`Navigated to Customization Studio for ${slotKey} slot`);
+        const slotKey = chk.getAttribute('data-slot');
+        const isChecked = chk.checked;
+        day[slotKey].completed = isChecked;
+        showToast(isChecked ? 'Activity marked as completed!' : 'Activity marked as pending.');
+        saveTripToSupabase(trip);
+        renderItinerary();
       });
     });
   }
@@ -1180,53 +787,33 @@
     if (!container) return;
 
     const trip = getCurrentTrip();
-    const filteredStays = trip.stays.filter(s => activeStayFilter === 'all' || s.category === activeStayFilter);
-
-    let filterBarHtml = `
-      <div class="filter-bar" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <span style="font-weight: 600; color: #94a3b8; font-size: 0.9rem;">${t('filterBy')}</span>
-        <button class="btn btn-sm ${activeStayFilter === 'all' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="all">${t('filterAll')}</button>
-        <button class="btn btn-sm ${activeStayFilter === 'family' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="family">${t('filterFamilySuites')}</button>
-        <button class="btn btn-sm ${activeStayFilter === 'accessible' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="accessible">${t('filterAccessible')}</button>
-        <button class="btn btn-sm ${activeStayFilter === 'central' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="central">${t('filterCentral')}</button>
-      </div>
-    `;
-
-    let staysCardsHtml = filteredStays.map(stay => `
-      <div class="stay-card" style="border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; background: var(--bg-card, #1e293b);">
-        <div class="stay-body">
-          <div class="stay-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">
-            <h3 class="stay-title" style="margin: 0;">${stay.name}</h3>
-            <div>
-              <span class="stay-rate" style="font-weight: 700; color: #10b981; font-size: 1.2rem;">${formatMoney(stay.pricePerNight)}</span>
-              <span class="stay-rate-sub"> ${t('perNight')}</span>
-            </div>
+    let staysHtml = trip.stays.map(stay => `
+      <div class="timeline-slot-card" style="margin-bottom: 1.5rem;">
+        <div class="slot-content-column">
+          <div class="slot-top-row">
+            <h3 class="dual-name-title">${stay.name}</h3>
+            <span class="slot-category-badge">${stay.type} • ⭐ ${stay.rating}</span>
           </div>
-          <p style="color: #94a3b8; margin: 0.25rem 0 0.75rem 0; font-size: 0.9rem;">${stay.neighborhood} • Rating: ★ ${stay.rating}</p>
-          <div class="stay-fit-banner" style="color: #3b82f6; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">${stay.fitBanner}</div>
-          <p class="stay-desc" style="color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${stay.description}</p>
-          <a href="${stay.bookingUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="display: inline-block; padding: 8px 18px; text-decoration: none; border-radius: 6px;">${t('btnBook')}</a>
+          <p style="color: var(--accent); font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem;">${stay.fitBanner}</p>
+          <p class="slot-description">${stay.description}</p>
+          <div class="slot-flags-row">
+            ${stay.features.map(f => `<span class="flag-chip access-chip">${f}</span>`).join('')}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+            <span style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">${formatMoney(stay.pricePerNight)} <span style="font-size: 0.8rem; font-weight: 400; color: var(--text-secondary);">/ night</span></span>
+            <a href="${stay.bookingUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration: none;">Book Directly</a>
+          </div>
         </div>
       </div>
     `).join('');
 
     container.innerHTML = `
-      <div class="panel-header" style="margin-bottom: 1.5rem;">
-        <div>
-          <h2 class="panel-title">${t('staysHeaderTitle')}</h2>
-          <p class="panel-subtitle" style="color: #94a3b8;">${t('staysHeaderSubtitle')}</p>
-        </div>
+      <div class="day-meta-banner">
+        <h2>Recommended Accommodations</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.3rem;">Curated stays matching your group size, accessibility requirements, and location.</p>
       </div>
-      ${filterBarHtml}
-      <div class="stays-grid">${staysCardsHtml}</div>
+      ${staysHtml}
     `;
-
-    container.querySelectorAll('[data-stay-filter]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        activeStayFilter = e.target.getAttribute('data-stay-filter');
-        renderStays();
-      });
-    });
   }
 
   function renderBudget() {
@@ -1237,268 +824,263 @@
     const b = trip.budgetBreakdown;
 
     container.innerHTML = `
-      <div class="panel-header" style="margin-bottom: 1.5rem;">
-        <div>
-          <h2 class="panel-title">${t('budgetHeaderTitle')}</h2>
-          <p class="panel-subtitle" style="color: #94a3b8;">${t('budgetHeaderSubtitle')}</p>
+      <div class="day-meta-banner">
+        <h2>Trip Budget & Cost Breakdown</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.3rem;">Estimated expenses calculated for your total party size.</p>
+      </div>
+
+      <div class="hero-metrics-grid" style="margin-bottom: 2rem;">
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-label">Total Estimated Cost</span>
+            <span class="metric-value" style="font-size: 1.3rem; color: var(--accent);">${formatMoney(b.totalTripCost)}</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-label">Average Daily Spend</span>
+            <span class="metric-value" style="font-size: 1.3rem; color: var(--primary);">${formatMoney(b.dailyAverage)}</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-label">Per Person Estimate</span>
+            <span class="metric-value" style="font-size: 1.3rem; color: var(--accent-gold);">${formatMoney(b.perPersonTotal)}</span>
+          </div>
         </div>
       </div>
 
-      <div class="budget-kpi-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('totalEstTripCost')}</span>
-          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.totalTripCost)}</div>
-        </div>
-        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('dailySpendAverage')}</span>
-          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.dailyAverage)}</div>
-        </div>
-        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('perPersonEstimate')}</span>
-          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.perPersonTotal)}</div>
-        </div>
-        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('budgetStatus')}</span>
-          <div class="kpi-number text-success" style="font-size: 1.6rem; font-weight: 700; color: #10b981; margin: 0.25rem 0;">${t('onTrack')}</div>
-        </div>
-      </div>
-    `;
-  }
+      <div class="timeline-slot-card" style="flex-direction: column;">
+        <h3 style="margin-bottom: 1rem;">Expense Category Distribution</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.2rem;">
+              <span>Lodging (${b.lodgingPct}%)</span>
+              <span>${formatMoney(b.lodgingTotal)}</span>
+            </div>
+            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+              <div style="width: ${b.lodgingPct}%; height: 100%; background: var(--primary);"></div>
+            </div>
+          </div>
 
-  function renderCustomizeConsole() {
-    const container = document.getElementById('customize');
-    if (!container) return;
-    const trip = getCurrentTrip();
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.2rem;">
+              <span>Dining & Food (${b.diningPct}%)</span>
+              <span>${formatMoney(b.diningTotal)}</span>
+            </div>
+            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+              <div style="width: ${b.diningPct}%; height: 100%; background: var(--accent);"></div>
+            </div>
+          </div>
 
-    container.innerHTML = `
-      <div class="panel-header" style="margin-bottom: 1.5rem;">
-        <div>
-          <h2 class="panel-title">${t('customizeHeaderTitle')}</h2>
-          <p class="panel-subtitle" style="color: #94a3b8;">${t('customizeHeaderSubtitle')}</p>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.2rem;">
+              <span>Attractions & Entry Tickets (${b.ticketsPct}%)</span>
+              <span>${formatMoney(b.ticketsTotal)}</span>
+            </div>
+            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+              <div style="width: ${b.ticketsPct}%; height: 100%; background: var(--accent-gold);"></div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.08);">
-        <h3 style="margin-top: 0;">${t('paceControlTitle')}</h3>
-        <p style="color: #94a3b8; font-size: 0.9rem;">${t('paceControlSubtitle')}</p>
-        <button class="btn btn-primary" id="btnApplyPace" style="margin-top: 1.25rem; padding: 8px 20px;">${t('btnApplyPace')}</button>
-      </div>
-    `;
-
-    const btnApplyPace = container.querySelector('#btnApplyPace');
-    if (btnApplyPace) {
-      btnApplyPace.addEventListener('click', () => {
-        showToast('Pace applied successfully!');
-        saveTripToSupabase(trip);
-        renderItinerary();
-      });
-    }
-  }
-
-  function renderPacking() {
-    const container = document.getElementById('packing');
-    if (!container) return;
-    const trip = getCurrentTrip();
-    const items = trip.packingList || [];
-
-    container.innerHTML = `
-      <div class="panel-header" style="margin-bottom: 1.5rem;">
-        <div>
-          <h2 class="panel-title">${t('packingHeaderTitle')}</h2>
-          <p class="panel-subtitle" style="color: #94a3b8;">${t('packingHeaderSubtitle')}</p>
-        </div>
-      </div>
-      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
-        <ul style="list-style: none; padding: 0; margin: 0;">
-          ${items.map((p, idx) => `
-            <li style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: ${p.checked ? '#94a3b8' : '#f8fafc'};">
-                <input type="checkbox" class="packing-chk" data-idx="${idx}" ${p.checked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
-                <span>${p.item}</span>
-              </label>
-            </li>
-          `).join('')}
-        </ul>
       </div>
     `;
-
-    container.querySelectorAll('.packing-chk').forEach(chk => {
-      chk.addEventListener('change', (e) => {
-        const idx = parseInt(e.target.getAttribute('data-idx'), 10);
-        if (items[idx]) {
-          items[idx].checked = e.target.checked;
-          renderPacking();
-          saveTripToSupabase(trip);
-        }
-      });
-    });
   }
 
   function renderAllViews() {
-    populateTripDropdown();
     renderTripHero();
     renderItinerary();
     renderStays();
     renderBudget();
-    renderCustomizeConsole();
-    renderPacking();
   }
 
   // ==========================================================================
-  // 7. Initialization & Event Listeners
+  // 7. Event Listeners & Initialization
   // ==========================================================================
-  function initEventListeners() {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const targetTab = e.currentTarget.getAttribute('data-tab');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
+  document.addEventListener('DOMContentLoaded', () => {
+    populateTripDropdown();
+    renderAllViews();
 
-        e.currentTarget.classList.add('active');
-        const panel = document.getElementById(targetTab);
-        if (panel) panel.classList.add('active');
+    // Trip Dropdown Selector
+    const tripSelect = document.getElementById('tripSelect');
+    if (tripSelect) {
+      tripSelect.addEventListener('change', (e) => {
+        currentTripIndex = parseInt(e.target.value, 10);
+        activeDayIndex = 0;
+        renderAllViews();
+        showToast('Trip switched successfully.');
       });
-    });
+    }
 
-    const btnPrint = document.getElementById('btnPrint');
-    if (btnPrint) btnPrint.addEventListener('click', () => window.print());
-
+    // Language Selector
     const langSelect = document.getElementById('langSelect');
     if (langSelect) {
       langSelect.value = currentLang;
-      langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
+      langSelect.addEventListener('change', (e) => {
+        applyLanguage(e.target.value);
+        showToast(`Language updated to ${e.target.value.toUpperCase()}`);
+      });
     }
 
+    // Currency Selector
     const currencySelect = document.getElementById('currencySelect');
+    const badge = document.getElementById('currencySymbolBadge');
     if (currencySelect) {
       currencySelect.value = currentCurrency;
+      if (badge && CURRENCIES[currentCurrency]) badge.textContent = CURRENCIES[currentCurrency].symbol;
+
       currencySelect.addEventListener('change', (e) => {
         currentCurrency = e.target.value;
         localStorage.setItem('tripcraft_currency', currentCurrency);
+        if (badge && CURRENCIES[currentCurrency]) badge.textContent = CURRENCIES[currentCurrency].symbol;
         renderAllViews();
+        showToast(`Currency changed to ${currentCurrency}`);
       });
     }
 
-    // Modal & New Trip Form Handler
-    const btnNewTrip = document.getElementById('btnNewTrip');
-    const modalNewTrip = document.getElementById('modalNewTrip') || document.getElementById('newTripModal');
-    const formNewTrip = document.getElementById('formNewTrip') || document.getElementById('newTripForm');
-
-    // Open Modal Trigger
-    if (btnNewTrip && modalNewTrip) {
-      btnNewTrip.addEventListener('click', () => {
-        modalNewTrip.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
-        modalNewTrip.classList.add('active', 'show', 'open');
+    // Theme Toggle
+    const themeBtn = document.getElementById('themeToggleBtn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        showToast(`Switched to ${newTheme} mode.`);
       });
     }
 
-    // Modal Close Triggers
-    if (modalNewTrip) {
-      const closeButtons = modalNewTrip.querySelectorAll('[data-close-modal], .btn-close, .close-modal');
-      closeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          modalNewTrip.classList.remove('active', 'show', 'open', 'visible', 'is-open');
-          modalNewTrip.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
-        });
-      });
-    }
+    // Tab Navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
 
-    // Form Submission Handler
-    if (formNewTrip) {
-      formNewTrip.addEventListener('submit', (e) => {
+        btn.classList.add('active');
+        const tabKey = btn.getAttribute('data-tab');
+        const targetPanel = document.getElementById(tabKey);
+        if (targetPanel) targetPanel.classList.add('active');
+      });
+    });
+
+    // Plan New Trip Form Handling
+    const newTripForm = document.getElementById('newTripForm');
+    if (newTripForm) {
+      newTripForm.addEventListener('submit', (e) => {
         e.preventDefault();
-
-        const inputDestination = document.getElementById('inputDestination');
-        const inputDuration = document.getElementById('inputDuration');
-        const selectTripType = document.getElementById('selectTripType');
-        const inputAdults = document.getElementById('inputAdults');
-        const inputChildren = document.getElementById('inputChildren');
-
-        const dest = inputDestination?.value.trim() || 'Custom Voyage';
-        const duration = parseInt(inputDuration?.value, 10) || 3;
-        const adults = parseInt(inputAdults?.value, 10) || 2;
-        const children = parseInt(inputChildren?.value, 10) || 0;
-        const type = selectTripType?.value || 'Family Vacation';
+        const dest = document.getElementById('inputDestination').value.trim();
+        const duration = parseInt(document.getElementById('inputDuration').value, 10) || 3;
+        const adults = parseInt(document.getElementById('inputAdults').value, 10) || 2;
+        const kids = parseInt(document.getElementById('inputChildren').value, 10) || 0;
+        const tripType = document.getElementById('selectTripType').value;
 
         const newTripObj = {
-          id: `trip-custom-${Date.now()}`,
+          id: 'trip-' + Date.now(),
           destination: dest,
-          country: 'Global',
+          country: dest.split(',')[1]?.trim() || dest,
           heroImage: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1600&q=80',
           title: `${dest} Expedition`,
-          subtitle: `Custom tailored ${duration}-day journey focusing on ${type.toLowerCase()}.`,
-          tripType: type,
+          subtitle: `A personalized ${duration}-day ${tripType.toLowerCase()} voyage designed for your group.`,
+          tripType: tripType,
           durationDays: duration,
           travelers: {
-            total: adults + children,
+            total: adults + kids,
             adults: adults,
-            children: children,
-            summary: `${adults + children} Travelers (${adults} Adults, ${children} Kids)`
+            children: kids,
+            seniors: 0,
+            summary: `${adults + kids} Travelers (${adults} Adults, ${kids} Kids)`
           },
           budgetTier: 'moderate',
-          pace: 'balanced',
-          weather: { temp: '22°C', condition: 'Pleasant', icon: '☀️', notes: 'Optimized schedule.' },
+          weather: { temp: '22°C', condition: 'Pleasant', notes: 'Optimized for local walking.' },
           stays: [
             {
-              id: `stay-${Date.now()}`,
-              name: `Central Suite ${dest.split(',')[0]}`,
-              type: 'Boutique Stay',
+              id: 'stay-new-1',
+              name: `Central Boutique Hotel ${dest.split(',')[0]}`,
+              type: 'Boutique Hotel',
               neighborhood: 'City Center',
-              rating: '4.88',
+              rating: '4.85',
               pricePerNight: 180,
               category: 'central',
-              fitBanner: '✓ Recommended match for your group',
-              features: ['📍 Central Access', '👨‍👩‍👧 Family Preferred'],
+              fitBanner: `✓ Accommodates ${adults + kids} Guests`,
+              features: ['📍 Downtown Location', '🍳 Breakfast Included', '📶 High Speed Wi-Fi'],
               bookingUrl: '#',
-              description: 'Comfortable accommodation close to public transit and major city sights.'
+              description: 'Comfortable stay with modern amenities located in the heart of the city.'
             }
           ],
           days: Array.from({ length: duration }, (_, i) => ({
             dayNumber: i + 1,
             dateLabel: `Day ${i + 1}`,
-            neighborhood: `${dest.split(',')[0]} Highlight District`,
-            weatherPlan: '☀️ Weather-optimized for walking and exploration.',
-            morning: { dualName: 'Morning Exploration', category: 'Sightseeing', time: '09:00 - 12:00', desc: 'Visit main city attractions.', weatherBadge: '☀️ Optimal Weather', cost: 20, completed: false },
-            lunch: { dualName: 'Local Lunch', category: 'Dining', time: '12:30 - 13:30', desc: 'Sample local cuisine.', weatherBadge: '🍽️ Indoor', cost: 25, completed: false },
-            afternoon: { dualName: 'Cultural Immersion', category: 'Culture', time: '14:00 - 17:00', desc: 'Museums and galleries.', weatherBadge: '🏛️ Indoor/Outdoor', cost: 15, completed: false },
-            evening: { dualName: 'Evening Entertainment', category: 'Leisure', time: '18:30 - 21:00', desc: 'Dinner and stroll.', weatherBadge: '🌆 Cool Breeze', cost: 40, completed: false }
+            neighborhood: `${dest.split(',')[0]} Central`,
+            weatherPlan: '☀️ Pleasant conditions throughout the day',
+            morning: {
+              dualName: `${dest.split(',')[0]} Main Heritage Site`,
+              category: 'Sightseeing',
+              time: '09:00 - 11:30',
+              desc: 'Explore landmark historical architecture and cultural monuments.',
+              weatherBadge: '☀️ Morning Outdoor',
+              accessibility: ['♿ Accessible Paths'],
+              cost: 15,
+              completed: false
+            },
+            lunch: {
+              dualName: 'Local Specialty Restaurant',
+              category: 'Dining',
+              time: '12:00 - 13:30',
+              desc: 'Taste authentic local culinary specialties and refreshing beverages.',
+              weatherBadge: '❄️ Air-Conditioned',
+              accessibility: ['👨‍👩‍👧 Family Friendly'],
+              cost: 30,
+              completed: false
+            },
+            afternoon: {
+              dualName: 'City Gardens & Shopping District',
+              category: 'Leisure',
+              time: '14:00 - 17:00',
+              desc: 'Stroll through picturesque urban parks and artisan markets.',
+              weatherBadge: '🌳 Shaded Park',
+              accessibility: ['👶 Stroller-Friendly'],
+              cost: 10,
+              completed: false
+            },
+            evening: {
+              dualName: 'Sunset Point & Dinner',
+              category: 'Nightlife',
+              time: '18:00 - 20:30',
+              desc: 'Enjoy panoramic evening skyline views paired with dinner.',
+              weatherBadge: '🌆 Evening Breeze',
+              accessibility: ['♿ Level Access'],
+              cost: 45,
+              completed: false
+            }
           })),
-          packingList: [
-            { id: 'c1', item: 'Travel Documents & ID', checked: false, category: 'Essentials' },
-            { id: 'c2', item: 'Comfortable walking shoes', checked: false, category: 'Footwear' }
-          ],
           budgetBreakdown: {
-            totalTripCost: duration * 150 * (adults + children),
-            dailyAverage: 150 * (adults + children),
-            perPersonTotal: duration * 150,
-            lodgingTotal: duration * 80 * adults,
-            diningTotal: duration * 40 * (adults + children),
-            ticketsTotal: duration * 20 * (adults + children),
-            transitTotal: duration * 10 * (adults + children)
+            totalTripCost: duration * 250,
+            dailyAverage: 250,
+            perPersonTotal: (duration * 250) / (adults + kids),
+            lodgingTotal: duration * 120,
+            diningTotal: duration * 80,
+            ticketsTotal: duration * 30,
+            transitTotal: duration * 20,
+            lodgingPct: 48,
+            diningPct: 32,
+            ticketsPct: 12,
+            transitPct: 8
           }
         };
 
         PRESET_TRIPS.unshift(newTripObj);
         currentTripIndex = 0;
+        activeDayIndex = 0;
+
+        populateTripDropdown();
         renderAllViews();
+
         saveTripToSupabase(newTripObj);
 
-        if (modalNewTrip) {
-          modalNewTrip.classList.remove('active', 'show', 'open', 'visible', 'is-open');
-          modalNewTrip.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
-        }
-        formNewTrip.reset();
+        document.getElementById('newTripModal')?.classList.remove('active', 'show');
+        newTripForm.reset();
         showToast('New trip generated successfully!');
       });
     }
-  }
+  });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initEventListeners();
-      renderAllViews();
-    });
-  } else {
-    initEventListeners();
-    renderAllViews();
-  }
 })();

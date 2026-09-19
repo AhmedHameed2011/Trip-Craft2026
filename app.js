@@ -1,21 +1,97 @@
 /**
  * TripCraft — Intelligent Travel Planner & Itinerary Studio
  * Master Client Application Script
- * Compliant with Tripcraft_instruction.txt.docx specifications
  */
 
-(function() {
+(function () {
   'use strict';
 
   // ==========================================================================
-  // 1. Currency & Conversion
+  // 1. Supabase & Authentication Engine
+  // ==========================================================================
+  const supabase = window.supabaseClient || window.supabase || null;
+
+  async function loadUserTrips(userId) {
+    if (!supabase) return;
+    
+    const { data: trips, error } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error || !trips || !trips.length) {
+      return;
+    }
+
+    const tripSelect = document.getElementById('tripSelect');
+    if (tripSelect) {
+      tripSelect.innerHTML = trips.map(t => {
+        const tripTitle = t.trip_data?.title || t.destination || 'Saved Trip';
+        return `<option value="${t.id}">${tripTitle}</option>`;
+      }).join('');
+      
+      tripSelect.addEventListener('change', (e) => {
+        const selectedId = e.target.value;
+        const selectedRow = trips.find(tr => tr.id === selectedId);
+        if (selectedRow) renderTripDetails(selectedRow);
+      });
+    }
+    
+    renderTripDetails(trips[0]);
+  }
+
+  // Expose loadUserTrips globally for auth modules
+  window.loadUserTrips = loadUserTrips;
+
+  function renderTripDetails(tripRow) {
+    const tripObj = tripRow.trip_data || tripRow;
+    const existingIdx = PRESET_TRIPS.findIndex(pt => pt.id === tripObj.id);
+    
+    if (existingIdx !== -1) {
+      currentTripIndex = existingIdx;
+    } else {
+      PRESET_TRIPS.unshift(tripObj);
+      currentTripIndex = 0;
+    }
+    
+    renderAllViews();
+  }
+
+  async function saveTripToSupabase(tripObj) {
+    if (!supabase || !window.currentUser) return;
+    try {
+      const { error } = await supabase
+        .from('trips')
+        .upsert({
+          id: tripObj.id,
+          user_id: window.currentUser.id,
+          destination: tripObj.destination,
+          trip_data: tripObj,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error saving trip to Supabase:', error);
+        showToast('Error syncing trip to cloud.');
+      } else {
+        showToast('Trip synced to your account successfully!');
+      }
+    } catch (err) {
+      console.error('Save to Supabase error:', err);
+    }
+  }
+
+  // ==========================================================================
+  // 2. Currency & Conversion Engine
   // ==========================================================================
   const CURRENCIES = {
     USD: { symbol: '$', rate: 1.0 },
     EUR: { symbol: '€', rate: 0.92 },
     GBP: { symbol: '£', rate: 0.79 },
     JPY: { symbol: '¥', rate: 152.0 },
-    SAR: { symbol: 'ر.س', rate: 3.75 }
+    SAR: { symbol: 'ر.س', rate: 3.75 },
+    AED: { symbol: 'AED', rate: 3.67 }
   };
 
   let currentCurrency = localStorage.getItem('tripcraft_currency') || 'USD';
@@ -26,14 +102,14 @@
     if (currentCurrency === 'JPY') {
       return `${curr.symbol}${converted.toLocaleString()}`;
     }
-    if (currentCurrency === 'SAR') {
+    if (currentCurrency === 'SAR' || currentCurrency === 'AED') {
       return `${converted.toLocaleString()} ${curr.symbol}`;
     }
     return `${curr.symbol}${converted.toLocaleString()}`;
   }
 
   // ==========================================================================
-  // 2. Multilingual Localization Engine
+  // 3. Multilingual Localization Engine
   // ==========================================================================
   const TRANSLATIONS = {
     en: {
@@ -150,7 +226,11 @@
       btnSwap: "Swap",
       btnBook: "Booking Info",
       btnSelectThis: "Select Alternative",
-      perNight: "/ night"
+      perNight: "/ night",
+      btnLogin: "Login",
+      btnRegister: "Register",
+      btnLogout: "Logout",
+      welcomeUser: "Welcome,"
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -175,7 +255,7 @@
       actionSwapActivity: "تبديل نشاط",
       actionSwapActivityDesc: "استعرض معالم بديلة ومميزة في نفس الحي",
       actionChangeRestaurant: "تغيير المطعم",
-      actionChangeRestaurantDesc: "اختر مطاعم محلية مناسبة للأطفال أو خيارات نباسية وحلال",
+      actionChangeRestaurantDesc: "اختر مطاعم محلية مناسبة للأطفال أو خيارات نباتية وحلال",
       actionAdjustPace: "تعديل سرعة اليوم",
       actionAdjustPaceDesc: "التنقل بين نمط هادئ، متوازن، وسريع ومكثف",
       actionBookingGuide: "دليل وروابط الحجز المباشر",
@@ -266,7 +346,11 @@
       btnSwap: "تبديل",
       btnBook: "معلومات الحجز",
       btnSelectThis: "اختيار هذا البديل",
-      perNight: "/ ليلة"
+      perNight: "/ ليلة",
+      btnLogin: "تسجيل الدخول",
+      btnRegister: "إنشاء حساب",
+      btnLogout: "تسجيل الخروج",
+      welcomeUser: "مرحباً،"
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -382,7 +466,11 @@
       btnSwap: "Cambiar",
       btnBook: "Info Reserva",
       btnSelectThis: "Elegir este",
-      perNight: "/ noche"
+      perNight: "/ noche",
+      btnLogin: "Iniciar Sesión",
+      btnRegister: "Registrarse",
+      btnLogout: "Cerrar Sesión",
+      welcomeUser: "Bienvenido,"
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -498,7 +586,11 @@
       btnSwap: "Remplacer",
       btnBook: "Info Réservation",
       btnSelectThis: "Choisir cet élément",
-      perNight: "/ nuit"
+      perNight: "/ nuit",
+      btnLogin: "Connexion",
+      btnRegister: "S'inscrire",
+      btnLogout: "Déconnexion",
+      welcomeUser: "Bienvenue,"
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -519,7 +611,7 @@
       transitOptimizedSubtext: "徒歩や移動時間を最小限に抑えるため、半径1.2km以内で活動をまとめています。",
       labelWeatherAdaptation: "気候・天候適応プラン",
       customizePlanTitle: "この日のプランをカスタマイズ",
-      customizePlanSubtitle: "観光スポットの入れ替え、食事場所の変更、ペース調整、直接予約案内を簡単に行えます。",
+      customizePlanSubtitle: "観光スポットの入れ替え、食事場所の変更、ペース調整を行えます。",
       actionSwapActivity: "アクティビティの入れ替え",
       actionSwapActivityDesc: "同じエリア内のおすすめ観光スポットから選択",
       actionChangeRestaurant: "食事処の変更",
@@ -587,7 +679,7 @@
       packingHeaderSubtitle: "現地の天候、旅行者の年齢層、訪問先に合わせた安心リストです。",
       packed: "準備済み",
       footerText: "世界中の旅行者に寄り添う、天候適応型の旅行計画をデザインします。",
-      footerLangSupport: "全言語対応 • ファミリー＆アクセシビリティ対応",
+      footerLangSupport: "多言語対応 • ファミリー＆バリアフリー重視",
       modalNewTripTitle: "新しい旅行プランを作成",
       formLabelDestination: "旅行先の都市・国 *",
       formLabelDuration: "旅行日数 *",
@@ -596,17 +688,17 @@
       formLabelChildren: "子供・若者 (0-17歳)",
       formLabelSeniors: "シニア (65歳以上)",
       formLabelTripType: "旅行の目的 *",
-      typeFamily: "家族旅行 (子供も楽しめるバランス型)",
+      typeFamily: "家族旅行 (お子様歓迎)",
       typeCulture: "歴史・文化探訪",
       typeRelaxation: "リゾート・温泉・癒やし",
-      typeCelebration: "記念日・ハネムーン",
-      typeAdventure: "自然体験・アクティビティ",
+      typeCelebration: "ハネムーン・記念旅行",
+      typeAdventure: "ハイキング・アクティビティ",
       formLabelBudgetPref: "予算設定 *",
-      budgetOptionEconomy: "エコノミー（手頃な宿、ローカル食堂、公共交通）",
-      budgetOptionModerate: "スタンダード・快適（快適ホテル、名物料理、周遊パス）",
-      budgetOptionLuxury: "プレミアム・高級（高級ホテル、特別ディナー、専用車）",
-      formLabelStartDate: "出発日",
-      formLabelSpecialNotes: "特記事項 / バリアフリーのご要望",
+      budgetOptionEconomy: "エコノミー (ホステル、B級グルメ、公共交通)",
+      budgetOptionModerate: "コンフォート (ファミリーホテル、人気レストラン)",
+      budgetOptionLuxury: "ラグジュアリー (5つ星、高級ディナー、専用車)",
+      formLabelStartDate: "開始日",
+      formLabelSpecialNotes: "特別リクエスト・バリアフリー",
       btnCancel: "キャンセル",
       btnGeneratePlan: "旅行プランを自動生成",
       completed: "完了",
@@ -614,7 +706,11 @@
       btnSwap: "変更する",
       btnBook: "予約案内",
       btnSelectThis: "これに変更",
-      perNight: "/ 泊"
+      perNight: "/ 泊",
+      btnLogin: "ログイン",
+      btnRegister: "新規登録",
+      btnLogout: "ログアウト",
+      welcomeUser: "ようこそ、"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -703,7 +799,7 @@
       packingHeaderSubtitle: "Abgestimmt auf Wetter, Altersgruppen und geplante Aktivitäten.",
       packed: "Gepackt",
       footerText: "Personalisierte und wetterangepasste Reiseplanung weltweit.",
-      footerLangSupport: "Kompatibel mit allen Sprachen • Fokus auf Familien & Barrierefreiheit",
+      footerLangSupport: "Kompatibel mit allen Sprachen • Familien- & Barrierefreiheitsfokus",
       modalNewTripTitle: "Neue Reise Planen",
       formLabelDestination: "Zielstadt & Land *",
       formLabelDuration: "Dauer (Tage) *",
@@ -712,16 +808,16 @@
       formLabelChildren: "Kinder / Jugendliche (0-17 J.)",
       formLabelSeniors: "Senioren (65+ J.)",
       formLabelTripType: "Art der Reise *",
-      typeFamily: "Familienurlaub (Kinderfreundlich & ausgewogen)",
+      typeFamily: "Familienurlaub (Kinderfreundlich)",
       typeCulture: "Kultur & Geschichte",
-      typeRelaxation: "Erholung & Natur",
+      typeRelaxation: "Erholung & Wellness",
       typeCelebration: "Feier & Flitterwochen",
       typeAdventure: "Abenteuer & Wandern",
       formLabelBudgetPref: "Budget-Präferenz *",
-      budgetOptionEconomy: "Günstig (Einfache Hotels, Streetfood, ÖPNV)",
-      budgetOptionModerate: "Mittel / Komfortabel (Familienhotels, gute Lokale)",
-      budgetOptionLuxury: "Gehoben / Luxus (5-Sterne, Gourmetküche, Privattransfers)",
-      formLabelStartDate: "Reisebeginn",
+      budgetOptionEconomy: "Günstig (Hostels, Streetfood, Nahverkehr)",
+      budgetOptionModerate: "Komfort (Familienhotels, Restaurants)",
+      budgetOptionLuxury: "Luxus (5-Sterne-Hotels, Gourmet, Chauffeur)",
+      formLabelStartDate: "Startdatum",
       formLabelSpecialNotes: "Besondere Wünsche / Barrierefreiheit",
       btnCancel: "Abbrechen",
       btnGeneratePlan: "Kompletten Reiseplan Erstellen",
@@ -730,7 +826,11 @@
       btnSwap: "Tauschen",
       btnBook: "Buchungs-Info",
       btnSelectThis: "Auswählen",
-      perNight: "/ Nacht"
+      perNight: "/ Nacht",
+      btnLogin: "Anmelden",
+      btnRegister: "Registrieren",
+      btnLogout: "Abmelden",
+      welcomeUser: "Willkommen,"
     }
   };
 
@@ -759,24 +859,18 @@
     const langSelect = document.getElementById('langSelect');
     if (langSelect) langSelect.value = lang;
 
-    // Re-render UI views
-    renderTripHero();
-    renderItinerary();
-    renderStays();
-    renderBudget();
-    renderCustomizeConsole();
-    renderPacking();
+    renderAllViews();
   }
 
   // ==========================================================================
-  // 3. Preset Rich Trips Data Store
+  // 4. Preset Rich Trips Data Store
   // ==========================================================================
   const PRESET_TRIPS = [
     {
       id: 'trip-tokyo-family',
       destination: 'Tokyo, Japan',
       country: 'Japan',
-      heroImage: 'assets/hero-tokyo.jpg',
+      heroImage: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1600&q=80',
       title: 'Tokyo Neon & Heritage',
       subtitle: 'A personalized voyage balancing vibrant pop-culture districts, historic Shinto shrines, and serene imperial gardens.',
       tripType: 'Family Vacation',
@@ -786,55 +880,29 @@
         adults: 2,
         children: 2,
         seniors: 0,
-        summary: '4 Travelers (2 Adults, 2 Kids: Ages 8 & 11)'
+        summary: '4 Travelers (2 Adults, 2 Kids)'
       },
       budgetTier: 'moderate',
+      pace: 'balanced',
       weather: {
-        temp: '23°C',
+        temp: '24°C',
         condition: 'Clear & Mild',
         icon: '☀️',
         notes: 'Weather Optimized: Cooler morning temple visits, midday indoor science/ac activities, sunset river breezes.'
       },
-      currentPace: 'balanced',
       stays: [
         {
           id: 'stay-mimaru-asakusa',
           name: 'MIMARU TOKYO Asakusa Station',
           type: 'Apartment Hotel',
           neighborhood: 'Asakusa & Sumida',
-          image: 'assets/dest-tokyo.jpg',
           rating: '4.92',
           pricePerNight: 240,
-          fitBanner: '✓ Fits 4 Guests (Family Suite with Japanese Bunk Beds & Kitchenette)',
+          category: 'family',
+          fitBanner: '✓ Fits 4 Guests (Family Suite with Japanese Bunk Beds)',
           features: ['👶 Stroller-Friendly', '♿ Elevator & Level Entry', '👨‍👩‍👧 Family Kitchen', '📍 2-min Walk to Asakusa Station'],
           bookingUrl: 'https://mimaruhotels.com/en/hotel/asakusa-station/',
           description: 'Spacious Japanese apartment hotel tailor-made for families with separate living spaces, coin laundry, and immediate access to the Ginza line.'
-        },
-        {
-          id: 'stay-keio-plaza',
-          name: 'Keio Plaza Hotel Tokyo',
-          type: 'Full-Service Hotel',
-          neighborhood: 'Shinjuku',
-          image: 'assets/dest-tokyo.jpg',
-          rating: '4.85',
-          pricePerNight: 290,
-          fitBanner: '✓ Connected Twin Rooms with City Skyline Views',
-          features: ['♿ Full Accessibility Rooms', '👨‍👩‍👧 High Chairs & Baby Cots', '🍽️ 10 In-House Restaurants', '📍 Direct Airport Limousine Bus'],
-          bookingUrl: 'https://www.keioplaza.com/',
-          description: 'Prestigious family-friendly hotel with bilingual concierge, nursing rooms, and dedicated children amenities.'
-        },
-        {
-          id: 'stay-richmond-premier',
-          name: 'Richmond Hotel Premier Asakusa',
-          type: 'Comfort Modern',
-          neighborhood: 'Asakusa',
-          image: 'assets/dest-tokyo.jpg',
-          rating: '4.78',
-          pricePerNight: 195,
-          fitBanner: '✓ Triple & Quad Rooms with Sensō-ji Views',
-          features: ['👶 Stroller Rental Free', '♿ Barrier-Free Restrooms', '📍 Above Shopping & Dining Plaza'],
-          bookingUrl: 'https://richmondhotel.jp/en/asakusa-international/',
-          description: 'Convenient central base directly across from historic Nakamise, surrounded by peaceful pedestrian walking lanes.'
         }
       ],
       days: [
@@ -849,7 +917,7 @@
             time: '09:00 - 11:30',
             desc: 'Tokyo’s oldest Buddhist temple founded in 645 AD. Enter through the iconic Kaminarimon Gate with giant red lantern.',
             weatherBadge: '☀️ Cool Morning Outdoor',
-            accessibility: ['👶 Stroller-Friendly', '♿ Step-Free Ramp at Main Hall', '👨‍👩‍👧 Great for Kids'],
+            accessibility: ['👶 Stroller-Friendly', '♿ Step-Free Ramp at Main Hall'],
             cost: 0,
             completed: false
           },
@@ -859,7 +927,7 @@
             time: '12:00 - 13:15',
             desc: 'Historic eatery founded in 1887 famed for rich, savory sesame-oil dipped tendon bowls over steaming rice.',
             weatherBadge: '❄️ Air-Conditioned Indoor Dining',
-            accessibility: ['👨‍👩‍👧 Family-Friendly Seating', '🥢 Traditional Tatami & Chairs'],
+            accessibility: ['👨‍👩‍👧 Family-Friendly Seating'],
             cost: 45,
             completed: false
           },
@@ -867,213 +935,34 @@
             dualName: '東京スカイツリー (Tokyo Skytree & Solamachi)',
             category: 'Sightseeing & Arcade',
             time: '14:00 - 17:00',
-            desc: 'Towering observation deck with panoramic views across Greater Tokyo and Mount Fuji, coupled with a 300-store family arcade.',
+            desc: 'Towering observation deck with panoramic views across Greater Tokyo and Mount Fuji.',
             weatherBadge: '🏛️ Midday Indoor Air-Conditioned',
-            accessibility: ['👶 Stroller Rental Available', '♿ Full Wheelchair Accessibility', '👨‍👩‍👧 Pokemon Center & Kids Zone'],
+            accessibility: ['♿ Full Wheelchair Accessibility'],
             cost: 65,
             completed: false
           },
           evening: {
-            dualName: '隅田川遊歩道 (Sumida River Sunset Promenade & Dinner)',
+            dualName: '隅田川遊歩道 (Sumida River Sunset Promenade)',
             category: 'Scenic Walk & Local Eats',
             time: '18:00 - 20:30',
-            desc: 'Breezy evening stroll along the lit bridges of Sumida River, followed by authentic Chousuke handmade udon.',
+            desc: 'Breezy evening stroll along the lit bridges of Sumida River.',
             weatherBadge: '🌆 Pleasant Evening Breeze',
-            accessibility: ['👶 Smooth Paved Walkway', '♿ Wheelchair Ramps'],
+            accessibility: ['👶 Smooth Paved Walkway'],
             cost: 50,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 2,
-          dateLabel: 'Day 2',
-          neighborhood: 'Ueno Cultural Park & Akihabara Electric Town',
-          weatherPlan: '☀️ Morning: Shaded Ueno Park Trees • 🏛️ Midday: Air-Conditioned Museum • 🌆 Evening: Neon Street Lighting',
-          morning: {
-            dualName: '上野恩賜公園 (Ueno Park & Toshogu Shrine)',
-            category: 'Nature & Heritage',
-            time: '09:30 - 11:45',
-            desc: 'Sprawling public park with ancient shrines, Shinobazu lotus pond, and gentle shaded walking avenues.',
-            weatherBadge: '🌳 Shaded Morning Trees',
-            accessibility: ['👶 Stroller Accessible', '♿ Wide Flat Paths', '👨‍👩‍👧 Open Play Spaces'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: 'とんかつ山家 (Tonkatsu Yamabe Ueno)',
-            category: 'Local Food Pick',
-            time: '12:15 - 13:30',
-            desc: 'Beloved neighborhood kitchen serving golden, crispy breaded pork cutlets with unlimited cabbage and miso soup.',
-            weatherBadge: '❄️ Indoor Air-Conditioned Dining',
-            accessibility: ['👨‍👩‍👧 Hearty Portions', '🥢 High Value Family Pick'],
-            cost: 38,
-            completed: false
-          },
-          afternoon: {
-            dualName: '国立科学博物館 (National Museum of Nature & Science)',
-            category: 'Museum & Discovery',
-            time: '14:00 - 16:45',
-            desc: 'Fascinating interactive dinosaur skeletons, theater 360 projection dome, and physics experiment hall for kids.',
-            weatherBadge: '🏛️ Midday Indoor Climate-Controlled',
-            accessibility: ['👶 Nursing Rooms & Strollers', '♿ 100% Barrier-Free Elevators', '👨‍👩‍👧 Hands-on Discovery Zone'],
-            cost: 24,
-            completed: false
-          },
-          evening: {
-            dualName: '秋葉原電気街 (Akihabara Tech & Retro Arcade)',
-            category: 'Culture & Entertainment',
-            time: '17:30 - 20:30',
-            desc: 'Wander the vibrant multi-story arcade centers and retro gaming shops, dining on authentic charcoal yakitori.',
-            weatherBadge: '🌆 Evening Vibrant Walk',
-            accessibility: ['♿ Elevator access in large department stores', '👨‍👩‍👧 Fun for teens and gamers'],
-            cost: 55,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 3,
-          dateLabel: 'Day 3',
-          neighborhood: 'Harajuku, Meiji Shrine & Shibuya Crossing',
-          weatherPlan: '🌳 Morning: Forest Canopy of Meiji Shrine • 🏛️ Midday: Omotesando Indoor Boutiques • 🌆 Evening: Shibuya Sky',
-          morning: {
-            dualName: '明治神宮 (Meiji Jingu Sacred Forest Shrine)',
-            category: 'Spiritual Heritage',
-            time: '09:00 - 11:30',
-            desc: 'Tranquil Shinto shrine nestled in an evergreen forest of 120,000 trees donated from all over Japan.',
-            weatherBadge: '🌳 Cool Dense Forest Canopy',
-            accessibility: ['👶 Compact Gravel Walks (Stroller-friendly main routes)', '♿ Accessible Restrooms', '👴 Relaxing for Seniors'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: '牛かつ もと村 (Gyukatsu Motomura Harajuku)',
-            category: 'Local Food Pick',
-            time: '12:00 - 13:30',
-            desc: 'Crispy breaded beef cutlet that guests finish sizzling on their personal tabletop stone grills.',
-            weatherBadge: '❄️ Indoor Air-Conditioned',
-            accessibility: ['👨‍👩‍👧 Engaging tabletop cooking', '🥢 Highly rated local specialty'],
-            cost: 60,
-            completed: false
-          },
-          afternoon: {
-            dualName: '竹下通り & 表参道 (Takeshita Street & Omotesando Hills)',
-            category: 'Pop Culture & Shopping',
-            time: '14:00 - 17:00',
-            desc: 'Vibrant youth fashion, colorful rainbow cotton candy, artisan crepe cafes, and architectural promenades.',
-            weatherBadge: '🏛️ Shaded Avenues & Malls',
-            accessibility: ['👶 Baby strollers welcome in Omotesando Hills', '♿ Elevators in all major stores'],
-            cost: 35,
-            completed: false
-          },
-          evening: {
-            dualName: '渋谷スクランブル交差点 (Shibuya Crossing & Sky Rooftop)',
-            category: 'Iconic Landmarks',
-            time: '17:30 - 20:30',
-            desc: 'The world’s busiest pedestrian crossing, followed by Shibuya Sky’s 360-degree sunset observation platform.',
-            weatherBadge: '🌆 Sunset Golden Hour',
-            accessibility: ['♿ Full ADA Wheelchair Lifts', '👨‍👩‍👧 High excitement for whole family'],
-            cost: 55,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 4,
-          dateLabel: 'Day 4',
-          neighborhood: 'Odaiba Bay & Waterfront Entertainment',
-          weatherPlan: '☀️ Morning: Monorail Scenic Views • 🏛️ Midday: TeamLab Immersive Art & Miraikan • 🌆 Evening: Rainbow Bridge Bay',
-          morning: {
-            dualName: '日本科学未来館 (Miraikan Science & Innovation)',
-            category: 'Science & Robotics',
-            time: '10:00 - 12:30',
-            desc: 'Interactive robotics exhibits, humanoid ASIMO demonstrations, and the breathtaking floating Geo-Cosmos globe.',
-            weatherBadge: '🏛️ Indoor High-Tech Experience',
-            accessibility: ['👶 Strollers & Family Lounges', '♿ Universal Design & Tactile Guides', '👨‍👩‍👧 Top Kid Pick'],
-            cost: 32,
-            completed: false
-          },
-          lunch: {
-            dualName: '月島もんじゃ (Tsukishima Monjayaki Waterfront)',
-            category: 'Local Food Pick',
-            time: '13:00 - 14:30',
-            desc: 'Tokyo’s savory comfort pancake cooked right in front of you on a sizzling teppan griddle.',
-            weatherBadge: '❄️ Indoor Waterfront Dining',
-            accessibility: ['👨‍👩‍👧 Fun communal family dining experience'],
-            cost: 50,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'チームラボプラネッツ (teamLab Planets Immersive Art)',
-            category: 'Digital Art Museum',
-            time: '15:00 - 17:30',
-            desc: 'Walk barefoot through water and immerse your senses in crystalline infinite flower mirrors.',
-            weatherBadge: '🏛️ Indoor Sensory Oasis',
-            accessibility: ['♿ Wheelchair loan options available on request', '👨‍👩‍👧 Unforgettable sensory fun for kids'],
-            cost: 95,
-            completed: false
-          },
-          evening: {
-            dualName: 'お台場海浜公園 (Odaiba Seaside Park & Rainbow Bridge)',
-            category: 'Seaside & Statue of Liberty',
-            time: '18:00 - 20:30',
-            desc: 'Watch the sunset over Tokyo Bay with views of the illuminated Rainbow Bridge and Tokyo Tower.',
-            weatherBadge: '🌆 Cooling Sea Breeze',
-            accessibility: ['👶 Smooth Boardwalk Paths', '♿ Wheelchair Accessible Seafront'],
-            cost: 20,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 5,
-          dateLabel: 'Day 5',
-          neighborhood: 'Shinjuku & Imperial Palace Gardens',
-          weatherPlan: '🌳 Morning: Royal Garden Shaded Lawn • 🏛️ Midday: Metropolitan Tower Views • 🌆 Evening: Omoide Yokocho',
-          morning: {
-            dualName: '新宿御苑 (Shinjuku Gyoen National Garden)',
-            category: 'National Garden & Teahouse',
-            time: '09:30 - 12:00',
-            desc: '58 hectares of manicured traditional Japanese, English landscape, and French formal gardens.',
-            weatherBadge: '🌳 Shaded Lawn & Greenhouses',
-            accessibility: ['👶 Wide Paved Buggy Paths', '♿ Wheelchair Accessible Restrooms', '👴 Tranquil Resting Benches'],
-            cost: 15,
-            completed: false
-          },
-          lunch: {
-            dualName: '新宿 つな八 (Shinjuku Tsunahachi Tempura)',
-            category: 'Local Food Pick',
-            time: '12:30 - 13:45',
-            desc: 'Master tempura chefs frying seasonal fresh seafood and vegetables piece-by-piece in front of guests since 1923.',
-            weatherBadge: '❄️ Indoor Air-Conditioned Comfort',
-            accessibility: ['👨‍👩‍👧 Non-smoking environment', '🥢 Traditional English menu available'],
-            cost: 65,
-            completed: false
-          },
-          afternoon: {
-            dualName: '東京都庁舎 (Tokyo Metropolitan Government Observatories)',
-            category: 'City Views & Architecture',
-            time: '14:30 - 16:30',
-            desc: 'Free observation towers at 202 meters offering 360-degree vistas of Tokyo, Mount Fuji, and Tokyo Dome.',
-            weatherBadge: '🏛️ Indoor Panoramic Observatories',
-            accessibility: ['👶 Stroller Accessible High-Speed Elevators', '♿ Full Barrier-Free Access'],
-            cost: 0,
-            completed: false
-          },
-          evening: {
-            dualName: '思い出横丁 & 新宿の夜 (Omoide Yokocho & Farewell Banquet)',
-            category: 'Atmospheric Alleys & Dining',
-            time: '17:30 - 20:30',
-            desc: 'Historic lantern-lit alleyways with savory yakitori skewers and comforting ramen to celebrate the journey.',
-            weatherBadge: '🌆 Evening Lantern Atmosphere',
-            accessibility: ['🥢 Casual street vibes', '👨‍👩‍👧 Memorable family farewell dinner'],
-            cost: 75,
             completed: false
           }
         }
+      ],
+      packingList: [
+        { id: 'p1', item: 'Comfortable walking sneakers (10k+ steps/day)', checked: true, category: 'Footwear' },
+        { id: 'p2', item: 'Universal Type A/B power adapters & power bank', checked: false, category: 'Electronics' },
+        { id: 'p3', item: 'Digital Suica / Pasmo transit pass loaded on Apple/Google Wallet', checked: true, category: 'Essentials' }
       ],
       budgetBreakdown: {
         totalTripCost: 2450,
         dailyAverage: 490,
         perPersonTotal: 612.50,
-        lodgingTotal: 1200, // 5 nights x 240
+        lodgingTotal: 1200,
         diningTotal: 620,
         ticketsTotal: 380,
         transitTotal: 250,
@@ -1081,262 +970,10 @@
         diningPct: 25,
         ticketsPct: 16,
         transitPct: 10
-      },
-      bookingLinks: [
-        {
-          title: 'Tokyo Metro 72-Hour Tourist Pass',
-          desc: 'Unlimited rides on all 13 Tokyo subway lines for ¥1,500 (~$10), saving up to 60% on daily family transit.',
-          icon: '🚇',
-          actionText: 'Official Metro Portal'
-        },
-        {
-          title: 'teamLab Planets Official Ticket Portal',
-          desc: 'Book designated time slots 4 weeks in advance directly to bypass scalpers and ensure guaranteed entry.',
-          icon: '🎟️',
-          actionText: 'Official teamLab Site'
-        },
-        {
-          title: 'Welcome Suica IC Card for Tourists',
-          desc: 'Tap-and-go contactless card for trains, buses, vending machines, and coin lockers across Japan with zero deposit.',
-          icon: '💳',
-          actionText: 'JR East Tourism Site'
-        },
-        {
-          title: 'Tokyo Skytree Fast Pass',
-          desc: 'Skip the standard ticket counter line directly to the 350m & 450m observation decks.',
-          icon: '🗼',
-          actionText: 'Official Skytree Portal'
-        }
-      ],
-      packing: [
-        {
-          category: 'Essential Documents & Finance',
-          icon: '🛂',
-          items: [
-            { text: 'Passports with 6+ months validity for all 4 travelers', checked: true },
-            { text: 'Visit Japan Web QR codes generated for customs & immigration', checked: true },
-            { text: 'Physical cash (¥30,000) for traditional street shrines & food stalls', checked: true },
-            { text: 'No-foreign-transaction-fee credit / debit cards', checked: false }
-          ]
-        },
-        {
-          category: 'Weather & Walking Gear (23°C Mild)',
-          icon: '👟',
-          items: [
-            { text: 'Ultra-comfortable broken-in walking shoes (10,000+ steps/day)', checked: true },
-            { text: 'Light breathable layers & light evening cardigan/jacket', checked: true },
-            { text: 'Compact UV umbrella / rain ponchos for kids', checked: false },
-            { text: 'Reusable insulated water bottles', checked: false }
-          ]
-        },
-        {
-          category: 'Family & Tech Accessories',
-          icon: '📱',
-          items: [
-            { text: 'Pocket Wi-Fi or eSims installed for constant navigation', checked: true },
-            { text: 'Compact lightweight travel stroller for Asakusa & parks', checked: false },
-            { text: 'High-capacity power bank (20,000 mAh) for phones', checked: true },
-            { text: 'Type-A Japan plug adapters', checked: true }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'trip-paris-romantic',
-      destination: 'Paris, France',
-      country: 'France',
-      heroImage: 'assets/hero-paris.jpg',
-      title: 'Paris Art, Culture & Romantic Heights',
-      subtitle: 'A refined cultural journey wandering the historic Seine riverbanks, world-renowned impressionist galleries, and atmospheric bistros.',
-      tripType: 'Celebration & Romance',
-      durationDays: 4,
-      travelers: {
-        total: 2,
-        adults: 2,
-        children: 0,
-        seniors: 0,
-        summary: '2 Travelers (Couples Celebration)'
-      },
-      budgetTier: 'luxury',
-      weather: {
-        temp: '19°C',
-        condition: 'Crisp Autumn Sunshine',
-        icon: '⛅',
-        notes: 'Weather Optimized: Crisp morning strolls in Luxembourg Gardens, afternoon Louvre gallery climate, golden hour Seine cruise.'
-      },
-      currentPace: 'balanced',
-      stays: [
-        {
-          id: 'stay-relais-christine',
-          name: 'Relais Christine',
-          type: 'Boutique Luxury Mansion',
-          neighborhood: 'Saint-Germain-des-Prés',
-          image: 'assets/dest-paris.jpg',
-          rating: '4.96',
-          pricePerNight: 480,
-          fitBanner: '✓ Romantic Deluxe Suite with Courtyard Garden View',
-          features: ['♿ Elevator to all rooms', '🍷 Private Spa Guerlain', '🥐 Gourmet French Breakfast', '📍 3-min to Seine River'],
-          bookingUrl: 'https://www.relais-christine.com/',
-          description: 'A discreet 17th-century private mansion built over abbey remains, located in the heart of the artistic Latin Quarter.'
-        },
-        {
-          id: 'stay-hotel-dame-des-arts',
-          name: 'Hôtel Dame des Arts',
-          type: 'Design Hotel',
-          neighborhood: 'Latin Quarter',
-          image: 'assets/dest-paris.jpg',
-          rating: '4.88',
-          pricePerNight: 350,
-          fitBanner: '✓ Panoramic Eiffel Tower Balcony Room',
-          features: ['🍸 360-Degree Rooftop Bar', '♿ Accessible Bathrooms', '📍 Steps from Saint-Michel Metro'],
-          bookingUrl: 'https://www.damedesarts.com/',
-          description: 'Contemporary Parisian luxury with custom woodwork, curated art pieces, and an extraordinary rooftop cocktail lounge.'
-        }
-      ],
-      days: [
-        {
-          dayNumber: 1,
-          dateLabel: 'Day 1',
-          neighborhood: 'Île de la Cité & Saint-Germain',
-          weatherPlan: '⛅ Morning: Gothic Cathedral & Sainte-Chapelle • 🏛️ Midday: Conciergerie • 🌆 Sunset: Pont Neuf River Walk',
-          morning: {
-            dualName: 'Cathédrale Notre-Dame & Sainte-Chapelle (Holy Chapel)',
-            category: 'Gothic Heritage',
-            time: '09:30 - 12:00',
-            desc: 'Gaze at the 1,113 magnificent 13th-century stained-glass panels rising 15 meters high inside Sainte-Chapelle.',
-            weatherBadge: '☀️ Mild Morning Light',
-            accessibility: ['♿ Elevator to upper chapel', '👴 Guided audio headsets available'],
-            cost: 32,
-            completed: false
-          },
-          lunch: {
-            dualName: 'Café de Flore (Historic Literary Bistro)',
-            category: 'Local Food Pick',
-            time: '12:30 - 14:00',
-            desc: 'The iconic Saint-Germain café frequented by Sartre and Hemingway, serving hot croque-monsieur and artisanal chocolat chaud.',
-            weatherBadge: '❄️ Terrace / Indoor Dining',
-            accessibility: ['🍷 Authentic Parisian sidewalk terrace'],
-            cost: 75,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'Jardin du Luxembourg (Luxembourg Palace Gardens)',
-            category: 'Royal Parks & Statues',
-            time: '14:30 - 17:00',
-            desc: 'Stroll around the famous Medici Fountain, shaded chestnut tree alleys, and watch vintage wooden sailboats on the grand basin.',
-            weatherBadge: '🌳 Shaded Tree Allées',
-            accessibility: ['👶 Smooth Gravel Paths', '♿ Wheelchair Accessible Gates', '👴 Ample Vintage Green Chairs'],
-            cost: 0,
-            completed: false
-          },
-          evening: {
-            dualName: 'Croisière sur la Seine (Sunset Seine River Cruise)',
-            category: 'Scenic Cruise & Champagne',
-            time: '18:00 - 20:30',
-            desc: 'Glide past the illuminated bridges, the Louvre, and the Musée d’Orsay with live classical music and champagne.',
-            weatherBadge: '🌆 Golden Hour River Breeze',
-            accessibility: ['♿ Ramp boarding at Pont Neuf', '🍷 Heated panoramic interior salons'],
-            cost: 90,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 2,
-          dateLabel: 'Day 2',
-          neighborhood: 'The Grand Boulevards & Louvre Royal Palace',
-          weatherPlan: '🏛️ Morning & Midday: Musée du Louvre Climate Galleries • 🌳 Sunset: Tuileries Promenade',
-          morning: {
-            dualName: 'Musée du Louvre (Masterpieces & Denon Wing)',
-            category: 'World Heritage Museum',
-            time: '09:00 - 12:30',
-            desc: 'Encounter the Mona Lisa, the Winged Victory of Samothrace, and the Venus de Milo in the world’s greatest art palace.',
-            weatherBadge: '🏛️ Indoor Climate-Controlled',
-            accessibility: ['♿ Full Elevators & Priority Line Access', '👶 Free Stroller Loan Desk'],
-            cost: 44,
-            completed: false
-          },
-          lunch: {
-            dualName: 'Le Soufflé (Traditional Haute Cuisine)',
-            category: 'Local Food Pick',
-            time: '13:00 - 14:30',
-            desc: 'Refined restaurant dedicated to sweet and savory soufflés, from cheese and truffle to chocolate Grand Marnier.',
-            weatherBadge: '❄️ Indoor Air-Conditioned Comfort',
-            accessibility: ['🍷 Quiet romantic ambiance'],
-            cost: 95,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'Jardin des Tuileries & Palais Garnier (Paris Opera)',
-            category: 'Architecture & Grandeur',
-            time: '15:00 - 17:30',
-            desc: 'Marvel at the phantom-inspiring gilded Grand Foyer, Italian auditorium, and Marc Chagall’s colorful ceiling at Opéra Garnier.',
-            weatherBadge: '🏛️ Indoor Gilded Palace',
-            accessibility: ['♿ Wheelchair lifts to grand salons'],
-            cost: 38,
-            completed: false
-          },
-          evening: {
-            dualName: 'Dîner Romantique au Marais (Fine Dining in Le Marais)',
-            category: 'Culinary Excellence',
-            time: '19:00 - 21:30',
-            desc: 'Intimate candlelit dining in a medieval vaulted cellar, savoring roasted duck magret and vintage Bordeaux wines.',
-            weatherBadge: '🌆 Cozy Evening Dining',
-            accessibility: ['🍷 Reservation secured in advance'],
-            cost: 160,
-            completed: false
-          }
-        }
-      ],
-      budgetBreakdown: {
-        totalTripCost: 3200,
-        dailyAverage: 800,
-        perPersonTotal: 1600,
-        lodgingTotal: 1920,
-        diningTotal: 840,
-        ticketsTotal: 260,
-        transitTotal: 180,
-        lodgingPct: 60,
-        diningPct: 26,
-        ticketsPct: 8,
-        transitPct: 6
-      },
-      bookingLinks: [
-        {
-          title: 'Official Louvre Museum Reserved Time Slots',
-          desc: 'Skip general security lines with timed entry reservations required for all visitors.',
-          icon: '🏛️',
-          actionText: 'Louvre Official Portal'
-        },
-        {
-          title: 'Paris Museum Pass (48 / 96 Hours)',
-          desc: 'Free direct entry to 50+ national monuments and museums with zero queueing.',
-          icon: '🎟️',
-          actionText: 'Official Pass Site'
-        }
-      ],
-      packing: [
-        {
-          category: 'Formal & Casual Parisian Wear',
-          icon: '👗',
-          items: [
-            { text: 'Smart-casual evening dinner attire (jackets & dresses)', checked: true },
-            { text: 'Leather walking boots / comfortable loafers', checked: true },
-            { text: 'Wool trench coat or lightweight overcoat for autumn', checked: true }
-          ]
-        },
-        {
-          category: 'Travel Documents & Reservations',
-          icon: '🎟️',
-          items: [
-            { text: 'Pre-printed museum & opera tickets', checked: true },
-            { text: 'Passports & travel insurance cards', checked: true }
-          ]
-        }
-      ]
+      }
     }
   ];
 
-  // Active state
   let currentTripIndex = 0;
   let activeDayIndex = 0;
   let activeStayFilter = 'all';
@@ -1346,26 +983,49 @@
   }
 
   // ==========================================================================
-  // 4. UI Rendering Functions
+  // 5. Toast Notification Engine
   // ==========================================================================
-  function renderTripHero() {
-    const trip = getCurrentTrip();
-
-    const heroBackdrop = document.getElementById('heroBackdrop');
-    if (heroBackdrop) {
-      heroBackdrop.style.backgroundImage = `url('${trip.heroImage}')`;
+  function showToast(message) {
+    let stack = document.getElementById('toastStack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'toastStack';
+      stack.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none;';
+      document.body.appendChild(stack);
     }
 
-    const heroTripType = document.getElementById('heroTripType');
-    if (heroTripType) heroTripType.textContent = trip.tripType;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.cssText = 'background: #1e293b; color: #fff; padding: 12px 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; font-size: 0.9rem; pointer-events: auto; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);';
+    toast.innerHTML = `<span>✨</span><span>${message}</span>`;
+    stack.appendChild(toast);
 
-    const heroDuration = document.getElementById('heroDuration');
-    if (heroDuration) heroDuration.textContent = `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'}`;
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(8px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
+  }
 
-    const heroWeatherBadge = document.getElementById('heroWeatherBadge');
-    const heroWeatherText = document.getElementById('heroWeatherText');
-    if (heroWeatherBadge && heroWeatherText) {
-      heroWeatherText.textContent = `${trip.weather.temp} • ${trip.weather.condition}`;
+  window.showToast = showToast;
+
+  // ==========================================================================
+  // 6. Rendering Functions
+  // ==========================================================================
+  function populateTripDropdown() {
+    const tripSelect = document.getElementById('tripSelect');
+    if (!tripSelect) return;
+    tripSelect.innerHTML = PRESET_TRIPS.map((trip, idx) =>
+      `<option value="${idx}">${trip.destination} (${trip.durationDays} Days)</option>`
+    ).join('');
+    tripSelect.value = currentTripIndex;
+  }
+
+  function renderTripHero() {
+    const trip = getCurrentTrip();
+    const backdrop = document.getElementById('heroBackdrop');
+    if (backdrop && trip.heroImage) {
+      backdrop.style.backgroundImage = `url('${trip.heroImage}')`;
     }
 
     const heroTitle = document.getElementById('heroTitle');
@@ -1374,989 +1034,449 @@
     const heroSubtitle = document.getElementById('heroSubtitle');
     if (heroSubtitle) heroSubtitle.textContent = trip.subtitle;
 
+    const heroTripType = document.getElementById('heroTripType');
+    if (heroTripType) heroTripType.textContent = trip.tripType;
+
+    const heroDuration = document.getElementById('heroDuration');
+    if (heroDuration) heroDuration.textContent = `${trip.durationDays} Days`;
+
+    const heroWeatherText = document.getElementById('heroWeatherText');
+    if (heroWeatherText) heroWeatherText.textContent = `${trip.weather.temp} • Weather Optimized`;
+
     const metricTravelers = document.getElementById('metricTravelers');
     if (metricTravelers) metricTravelers.textContent = trip.travelers.summary;
 
     const metricStay = document.getElementById('metricStay');
-    if (metricStay && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
+    if (metricStay && trip.stays.length) metricStay.textContent = trip.stays[0].name;
 
     const metricDailySpend = document.getElementById('metricDailySpend');
-    if (metricDailySpend) {
-      metricDailySpend.textContent = `${formatMoney(trip.budgetBreakdown.dailyAverage)} / day`;
-    }
+    if (metricDailySpend) metricDailySpend.textContent = `${formatMoney(trip.budgetBreakdown.dailyAverage)} / day`;
 
     const metricNeighborhood = document.getElementById('metricNeighborhood');
-    if (metricNeighborhood && trip.days[activeDayIndex]) {
-      metricNeighborhood.textContent = trip.days[activeDayIndex].neighborhood.split(',')[0];
-    }
-
-    // Populate Trip Switcher dropdown
-    const tripSelect = document.getElementById('tripSelect');
-    if (tripSelect) {
-      tripSelect.innerHTML = '';
-      PRESET_TRIPS.forEach((tr, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        opt.textContent = `${tr.destination} (${tr.durationDays} Days)`;
-        if (idx === currentTripIndex) opt.selected = true;
-        tripSelect.appendChild(opt);
-      });
-    }
+    if (metricNeighborhood && trip.days.length) metricNeighborhood.textContent = trip.days[0].neighborhood;
   }
 
   function renderItinerary() {
-    const trip = getCurrentTrip();
-    if (!trip.days || trip.days.length === 0) return;
-
-    if (activeDayIndex >= trip.days.length) activeDayIndex = 0;
-    const day = trip.days[activeDayIndex];
-
-    // Render Day Navigation Pills
-    const dayPillsContainer = document.getElementById('dayPillsContainer');
-    if (dayPillsContainer) {
-      dayPillsContainer.innerHTML = '';
-      trip.days.forEach((d, idx) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `day-pill-btn ${idx === activeDayIndex ? 'active' : ''}`;
-        btn.innerHTML = `
-          <span class="pill-day-label">${t('thDay')} ${d.dayNumber}</span>
-          <span class="pill-day-title">${d.neighborhood.split(',')[0]}</span>
-        `;
-        btn.addEventListener('click', () => {
-          activeDayIndex = idx;
-          renderItinerary();
-          renderTripHero();
-        });
-        dayPillsContainer.appendChild(btn);
-      });
-    }
-
-    // Render Day Context Banner
-    const dayNeighborhoodText = document.getElementById('dayNeighborhoodText');
-    if (dayNeighborhoodText) dayNeighborhoodText.textContent = day.neighborhood;
-
-    const dayWeatherAdaptationText = document.getElementById('dayWeatherAdaptationText');
-    if (dayWeatherAdaptationText) dayWeatherAdaptationText.textContent = day.weatherPlan;
-
-    // Render Timeline Activity Slots
-    const container = document.getElementById('timelineCardsContainer');
+    const container = document.getElementById('itinerary');
     if (!container) return;
-    container.innerHTML = '';
 
-    const slots = [
-      { phase: 'morning', phaseName: t('slotMorning'), slotData: day.morning, time: day.morning.time },
-      { phase: 'lunch', phaseName: t('slotLunch'), slotData: day.lunch, time: day.lunch.time },
-      { phase: 'afternoon', phaseName: t('slotAfternoon'), slotData: day.afternoon, time: day.afternoon.time },
-      { phase: 'evening', phaseName: t('slotEvening'), slotData: day.evening, time: day.evening.time }
+    const trip = getCurrentTrip();
+    const day = trip.days[activeDayIndex] || trip.days[0];
+
+    let dayPillsHtml = trip.days.map((d, idx) => `
+      <button class="day-pill-btn ${idx === activeDayIndex ? 'active' : ''}" data-day-index="${idx}" type="button">
+        <span class="pill-day-label">Day ${d.dayNumber}</span>
+        <span class="pill-day-title">${d.neighborhood.split(',')[0]}</span>
+      </button>
+    `).join('');
+
+    const phases = [
+      { key: 'morning', label: 'Morning', badgeClass: 'phase-morning' },
+      { key: 'lunch', label: 'Lunch Spot', badgeClass: 'phase-lunch' },
+      { key: 'afternoon', label: 'Afternoon', badgeClass: 'phase-afternoon' },
+      { key: 'evening', label: 'Evening', badgeClass: 'phase-evening' }
     ];
 
-    slots.forEach(s => {
-      if (!s.slotData) return;
-      const card = document.createElement('div');
-      card.className = `timeline-slot-card ${s.slotData.completed ? 'completed' : ''}`;
-
-      // Format dual name: if it contains parens, split into local and english
-      let localName = '';
-      let englishName = s.slotData.dualName;
-      if (s.slotData.dualName.includes('(')) {
-        const parts = s.slotData.dualName.split('(');
-        localName = parts[0].trim();
-        englishName = parts[1].replace(')', '').trim();
-      }
-
-      const flagsHtml = `
-        ${s.slotData.weatherBadge ? `<span class="flag-chip weather-chip">${s.slotData.weatherBadge}</span>` : ''}
-        ${(s.slotData.accessibility || []).map(acc => `<span class="flag-chip family-chip">${acc}</span>`).join('')}
-        <span class="flag-chip cost-chip">💵 ${formatMoney(s.slotData.cost)}</span>
-      `;
-
-      card.innerHTML = `
-        <div class="slot-time-column">
-          <span class="slot-phase-pill phase-${s.phase}">${s.phaseName}</span>
-          <span class="slot-time-range">${s.time}</span>
-        </div>
-        <div class="slot-content-column">
-          <div class="slot-top-row">
-            <div class="slot-name-group">
-              <h4 class="dual-name-title">
-                ${localName ? `<span class="local-script-name">${localName}</span>` : ''}
-                <span class="english-trans-name">${englishName}</span>
-              </h4>
-            </div>
-            <span class="slot-category-badge">${s.slotData.category}</span>
+    let slotsHtml = phases.map(phase => {
+      const slot = day[phase.key];
+      if (!slot) return '';
+      return `
+        <div class="timeline-slot-card ${slot.completed ? 'completed' : ''}">
+          <div class="slot-time-column">
+            <span class="slot-phase-pill ${phase.badgeClass}">${phase.label}</span>
+            <span class="slot-time-range">${slot.time}</span>
           </div>
-          <p class="slot-description">${s.slotData.desc}</p>
-          <div class="slot-flags-row">${flagsHtml}</div>
-          <div class="slot-actions-bar">
-            <label class="completion-check-label">
-              <input type="checkbox" class="completion-checkbox" ${s.slotData.completed ? 'checked' : ''}>
-              <span>${s.slotData.completed ? t('completed') : t('markCompleted')}</span>
-            </label>
-            <div class="slot-btn-group">
-              <button type="button" class="btn btn-secondary btn-sm btn-swap-slot" data-slot="${s.phase}">
-                🔄 ${t('btnSwap')}
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm btn-guidance-slot">
-                🎟️ ${t('btnBook')}
-              </button>
+          <div class="slot-content-column">
+            <div class="slot-top-row">
+              <div class="slot-name-group">
+                <h3 class="dual-name-title">${slot.dualName}</h3>
+              </div>
+              <span class="slot-category-badge">${slot.category}</span>
+            </div>
+            <p class="slot-description">${slot.desc}</p>
+            <div class="slot-flags-row">
+              <span class="flag-chip weather-chip">${slot.weatherBadge}</span>
+              ${slot.accessibility ? slot.accessibility.map(a => `<span class="flag-chip access-chip">${a}</span>`).join('') : ''}
+              <span class="flag-chip cost-chip">${slot.cost === 0 ? 'Free Entry' : formatMoney(slot.cost)}</span>
+            </div>
+            <div class="slot-actions-bar">
+              <label class="completion-check-label">
+                <input type="checkbox" class="completion-checkbox" data-slot="${phase.key}" ${slot.completed ? 'checked' : ''}>
+                <span>${slot.completed ? t('completed') : t('markCompleted')}</span>
+              </label>
+              <div class="slot-btn-group">
+                <button class="btn btn-sm btn-secondary swap-btn" type="button" data-slot="${phase.key}">${t('btnSwap')}</button>
+                <button class="btn btn-sm btn-secondary book-btn" type="button" onclick="window.showToast('${t('btnBook')}: Direct official reservation link loaded')">${t('btnBook')}</button>
+              </div>
             </div>
           </div>
         </div>
       `;
+    }).join('');
 
-      // Completion toggle handler
-      const chk = card.querySelector('.completion-checkbox');
+    container.innerHTML = `
+      <div class="itinerary-header-bar">
+        <div class="day-pills-scroller">${dayPillsHtml}</div>
+      </div>
+
+      <div class="day-context-banner">
+        <div class="context-group">
+          <div class="context-icon-wrap geo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <div class="context-title">${t('labelNeighborhoodCluster')}</div>
+            <div class="context-value">${day.neighborhood}</div>
+            <div class="context-subtext">${t('transitOptimizedSubtext')}</div>
+          </div>
+        </div>
+        <div class="context-group">
+          <div class="context-icon-wrap weather">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+          </div>
+          <div>
+            <div class="context-title">${t('labelWeatherAdaptation')}</div>
+            <div class="context-value">${day.weatherPlan}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-blocks-wrapper">${slotsHtml}</div>
+    `;
+
+    container.querySelectorAll('.day-pill-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        activeDayIndex = parseInt(e.currentTarget.getAttribute('data-day-index'), 10);
+        renderItinerary();
+      });
+    });
+
+    container.querySelectorAll('.completion-checkbox').forEach(chk => {
       chk.addEventListener('change', (e) => {
-        s.slotData.completed = e.target.checked;
-        card.classList.toggle('completed', e.target.checked);
-        const labelSpan = card.querySelector('.completion-check-label span');
-        if (labelSpan) labelSpan.textContent = e.target.checked ? t('completed') : t('markCompleted');
-        showToast(e.target.checked ? `✓ Marked "${englishName}" as completed` : `Reopened "${englishName}"`);
+        const slotKey = e.target.getAttribute('data-slot');
+        if (day[slotKey]) {
+          day[slotKey].completed = e.target.checked;
+          renderItinerary();
+          showToast(e.target.checked ? 'Marked as completed' : 'Marked as pending');
+          saveTripToSupabase(trip);
+        }
       });
+    });
 
-      // Swap button handler
-      const swapBtn = card.querySelector('.btn-swap-slot');
-      swapBtn.addEventListener('click', () => {
-        switchTab('customize');
-        const swapDaySelect = document.getElementById('swapDaySelect');
-        const swapSlotSelect = document.getElementById('swapSlotSelect');
-        if (swapDaySelect) swapDaySelect.value = activeDayIndex;
-        if (swapSlotSelect) swapSlotSelect.value = s.phase;
-        renderSwapAlternates(activeDayIndex, s.phase);
+    container.querySelectorAll('.swap-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const slotKey = e.currentTarget.getAttribute('data-slot');
+        const customizeTabBtn = document.querySelector('[data-tab="customize"]');
+        if (customizeTabBtn) customizeTabBtn.click();
+        const slotSelect = document.getElementById('swapSlotSelect');
+        if (slotSelect) slotSelect.value = slotKey;
+        showToast(`Navigated to Customization Studio for ${slotKey} slot`);
       });
-
-      // Guidance button handler
-      const guideBtn = card.querySelector('.btn-guidance-slot');
-      guideBtn.addEventListener('click', () => {
-        switchTab('customize');
-        const bookSec = document.querySelector('.booking-guidance-section');
-        if (bookSec) bookSec.scrollIntoView({ behavior: 'smooth' });
-      });
-
-      container.appendChild(card);
     });
   }
 
   function renderStays() {
-    const trip = getCurrentTrip();
-    const container = document.getElementById('staysContainer');
+    const container = document.getElementById('stays');
     if (!container) return;
-    container.innerHTML = '';
 
-    let stays = trip.stays || [];
-    if (activeStayFilter === 'family') {
-      stays = stays.filter(s => s.fitBanner.toLowerCase().includes('family') || s.features.some(f => f.includes('Family')));
-    } else if (activeStayFilter === 'accessible') {
-      stays = stays.filter(s => s.features.some(f => f.includes('Wheelchair') || f.includes('Elevator') || f.includes('Stroller')));
-    } else if (activeStayFilter === 'central') {
-      stays = stays.filter(s => s.features.some(f => f.includes('Station') || f.includes('Transit')));
-    }
+    const trip = getCurrentTrip();
+    const filteredStays = trip.stays.filter(s => activeStayFilter === 'all' || s.category === activeStayFilter);
 
-    stays.forEach(stay => {
-      const card = document.createElement('div');
-      card.className = 'stay-card';
-      card.innerHTML = `
-        <div class="stay-image-wrap">
-          <img src="${stay.image}" alt="${stay.name}" loading="lazy">
-          <span class="stay-badge-overlay badge badge-primary">${stay.neighborhood}</span>
-          <span class="stay-rating-overlay">★ ${stay.rating}</span>
-        </div>
+    let filterBarHtml = `
+      <div class="filter-bar" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <span style="font-weight: 600; color: #94a3b8; font-size: 0.9rem;">${t('filterBy')}</span>
+        <button class="btn btn-sm ${activeStayFilter === 'all' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="all">${t('filterAll')}</button>
+        <button class="btn btn-sm ${activeStayFilter === 'family' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="family">${t('filterFamilySuites')}</button>
+        <button class="btn btn-sm ${activeStayFilter === 'accessible' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="accessible">${t('filterAccessible')}</button>
+        <button class="btn btn-sm ${activeStayFilter === 'central' ? 'btn-primary' : 'btn-secondary'}" data-stay-filter="central">${t('filterCentral')}</button>
+      </div>
+    `;
+
+    let staysCardsHtml = filteredStays.map(stay => `
+      <div class="stay-card" style="border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; background: var(--bg-card, #1e293b);">
         <div class="stay-body">
-          <div class="stay-header-row">
-            <h3 class="stay-title">${stay.name}</h3>
-            <div class="stay-rate">${formatMoney(stay.pricePerNight)}<span class="stay-rate-sub"> ${t('perNight')}</span></div>
+          <div class="stay-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">
+            <h3 class="stay-title" style="margin: 0;">${stay.name}</h3>
+            <div>
+              <span class="stay-rate" style="font-weight: 700; color: #10b981; font-size: 1.2rem;">${formatMoney(stay.pricePerNight)}</span>
+              <span class="stay-rate-sub"> ${t('perNight')}</span>
+            </div>
           </div>
-          <div class="stay-fit-banner">${stay.fitBanner}</div>
-          <p class="stay-desc">${stay.description}</p>
-          <div class="stay-features-list">
-            ${stay.features.map(f => `<span class="flag-chip access-chip">${f}</span>`).join('')}
-          </div>
-          <a href="${stay.bookingUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block">
-            <span>Official Booking & Rates</span>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-          </a>
+          <p style="color: #94a3b8; margin: 0.25rem 0 0.75rem 0; font-size: 0.9rem;">${stay.neighborhood} • Rating: ★ ${stay.rating}</p>
+          <div class="stay-fit-banner" style="color: #3b82f6; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">${stay.fitBanner}</div>
+          <p class="stay-desc" style="color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${stay.description}</p>
+          <a href="${stay.bookingUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="display: inline-block; padding: 8px 18px; text-decoration: none; border-radius: 6px;">${t('btnBook')}</a>
         </div>
-      `;
-      container.appendChild(card);
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="panel-title">${t('staysHeaderTitle')}</h2>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('staysHeaderSubtitle')}</p>
+        </div>
+      </div>
+      ${filterBarHtml}
+      <div class="stays-grid">${staysCardsHtml}</div>
+    `;
+
+    container.querySelectorAll('[data-stay-filter]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        activeStayFilter = e.target.getAttribute('data-stay-filter');
+        renderStays();
+      });
     });
   }
 
   function renderBudget() {
+    const container = document.getElementById('budget');
+    if (!container) return;
+
     const trip = getCurrentTrip();
     const b = trip.budgetBreakdown;
 
-    const budgetTotalCost = document.getElementById('budgetTotalCost');
-    if (budgetTotalCost) budgetTotalCost.textContent = formatMoney(b.totalTripCost);
+    container.innerHTML = `
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="panel-title">${t('budgetHeaderTitle')}</h2>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('budgetHeaderSubtitle')}</p>
+        </div>
+      </div>
 
-    const budgetTotalCaption = document.getElementById('budgetTotalCaption');
-    if (budgetTotalCaption) {
-      budgetTotalCaption.textContent = `For ${trip.travelers.total} travelers over ${trip.durationDays} days`;
-    }
-
-    const budgetDailyAvg = document.getElementById('budgetDailyAvg');
-    if (budgetDailyAvg) budgetDailyAvg.textContent = formatMoney(b.dailyAverage);
-
-    const budgetPerPerson = document.getElementById('budgetPerPerson');
-    if (budgetPerPerson) budgetPerPerson.textContent = formatMoney(b.perPersonTotal);
-
-    const costLodgingPct = document.getElementById('costLodgingPct');
-    if (costLodgingPct) costLodgingPct.textContent = `${b.lodgingPct}%`;
-
-    const costDiningPct = document.getElementById('costDiningPct');
-    if (costDiningPct) costDiningPct.textContent = `${b.diningPct}%`;
-
-    const costTicketsPct = document.getElementById('costTicketsPct');
-    if (costTicketsPct) costTicketsPct.textContent = `${b.ticketsPct}%`;
-
-    const costTransitPct = document.getElementById('costTransitPct');
-    if (costTransitPct) costTransitPct.textContent = `${b.transitPct}%`;
-
-    const budgetProgressBar = document.getElementById('budgetProgressBar');
-    if (budgetProgressBar) {
-      budgetProgressBar.innerHTML = `
-        <div class="seg seg-lodging" style="width: ${b.lodgingPct}%;" title="${t('catLodging')}: ${b.lodgingPct}%"></div>
-        <div class="seg seg-dining" style="width: ${b.diningPct}%;" title="${t('catDining')}: ${b.diningPct}%"></div>
-        <div class="seg seg-tickets" style="width: ${b.ticketsPct}%;" title="${t('catTickets')}: ${b.ticketsPct}%"></div>
-        <div class="seg seg-transit" style="width: ${b.transitPct}%;" title="${t('catTransit')}: ${b.transitPct}%"></div>
-      `;
-    }
-
-    // Daily breakdown table
-    const tableBody = document.getElementById('dailyCostTableBody');
-    if (tableBody) {
-      tableBody.innerHTML = '';
-      trip.days.forEach(d => {
-        const mealsCost = d.lunch.cost + 35; // lunch + dinner est
-        const ticketsCost = (d.morning.cost || 0) + (d.afternoon.cost || 0);
-        const transitCost = 15;
-        const dailyTotal = mealsCost + ticketsCost + transitCost;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${t('thDay')} ${d.dayNumber}</strong></td>
-          <td>${d.neighborhood.split(',')[0]}</td>
-          <td>${formatMoney(mealsCost)}</td>
-          <td>${formatMoney(ticketsCost)}</td>
-          <td>${formatMoney(transitCost)}</td>
-          <td><strong>${formatMoney(dailyTotal)}</strong></td>
-        `;
-        tableBody.appendChild(tr);
-      });
-    }
+      <div class="budget-kpi-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('totalEstTripCost')}</span>
+          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.totalTripCost)}</div>
+        </div>
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('dailySpendAverage')}</span>
+          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.dailyAverage)}</div>
+        </div>
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('perPersonEstimate')}</span>
+          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.perPersonTotal)}</div>
+        </div>
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('budgetStatus')}</span>
+          <div class="kpi-number text-success" style="font-size: 1.6rem; font-weight: 700; color: #10b981; margin: 0.25rem 0;">${t('onTrack')}</div>
+        </div>
+      </div>
+    `;
   }
 
   function renderCustomizeConsole() {
+    const container = document.getElementById('customize');
+    if (!container) return;
     const trip = getCurrentTrip();
 
-    // Populate day selector in customize tab
-    const swapDaySelect = document.getElementById('swapDaySelect');
-    if (swapDaySelect) {
-      swapDaySelect.innerHTML = '';
-      trip.days.forEach((d, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        opt.textContent = `${t('thDay')} ${d.dayNumber} — ${d.neighborhood.split(',')[0]}`;
-        if (idx === activeDayIndex) opt.selected = true;
-        swapDaySelect.appendChild(opt);
-      });
-    }
-
-    const swapSlotSelect = document.getElementById('swapSlotSelect');
-    const slot = swapSlotSelect ? swapSlotSelect.value : 'morning';
-    renderSwapAlternates(activeDayIndex, slot);
-
-    // Render Booking guidance links
-    const bookingLinksGrid = document.getElementById('bookingLinksGrid');
-    if (bookingLinksGrid) {
-      bookingLinksGrid.innerHTML = '';
-      (trip.bookingLinks || []).forEach(link => {
-        const card = document.createElement('div');
-        card.className = 'booking-link-card';
-        card.innerHTML = `
-          <div class="booking-icon">${link.icon}</div>
-          <div class="booking-info">
-            <h4>${link.title}</h4>
-            <p>${link.desc}</p>
-            <span class="booking-link-action">${link.actionText} →</span>
-          </div>
-        `;
-        card.addEventListener('click', () => {
-          showToast(`Opening guidance for: ${link.title}`);
-        });
-        bookingLinksGrid.appendChild(card);
-      });
-    }
-  }
-
-  const ALTERNATES_CATALOG = {
-    morning: [
-      {
-        dualName: '築地場外市場 (Tsukiji Outer Market Tasting Tour)',
-        category: 'Culinary Heritage',
-        desc: 'Taste fresh tamagoyaki, strawberry daifuku mochi, and artisanal green tea from morning market stalls.',
-        cost: 25,
-        weatherBadge: '☀️ Covered Morning Walkway'
-      },
-      {
-        dualName: '浜離宮恩賜庭園 (Hamarikyu Traditional Gardens)',
-        category: 'Imperial Nature',
-        desc: 'Stroll around a tranquil tidal pond with traditional matcha tea service in the central floating pavilion.',
-        cost: 15,
-        weatherBadge: '🌳 Shaded Scenic Garden'
-      }
-    ],
-    lunch: [
-      {
-        dualName: '一蘭 浅草店 (Ichiran Ramen Individual Booths)',
-        category: 'Family-Favorite Tonkotsu',
-        desc: 'World-famous rich tonkotsu broth with custom flavor ordering sheets in English, perfect for kids & solo diners.',
-        cost: 32,
-        weatherBadge: '❄️ Air-Conditioned Comfort'
-      },
-      {
-        dualName: '玄品 ふぐ & 和食 (Guenpin Washoku Seasonal Set)',
-        category: 'Traditional Japanese Washoku',
-        desc: 'Relaxed private dining rooms serving fresh seasonal sashimi, tempura, and simmered black wagyu beef.',
-        cost: 60,
-        weatherBadge: '❄️ Quiet Private Dining'
-      }
-    ],
-    afternoon: [
-      {
-        dualName: '江戸東京博物館 (Edo-Tokyo Cultural Museum & Crafts)',
-        category: 'Living History',
-        desc: 'Walk across a life-size replica of Nihonbashi bridge and explore historic Edo merchant districts.',
-        cost: 20,
-        weatherBadge: '🏛️ Indoor Air-Conditioned Museum'
-      },
-      {
-        dualName: '隅田水族館 (Sumida Aquarium & Penguins)',
-        category: 'Aquatic Life & Nursery',
-        desc: 'Modern indoor aquarium inside Tokyo Solamachi featuring Magellanic penguins and glowing jellyfish tanks.',
-        cost: 45,
-        weatherBadge: '🏛️ Modern Indoor Oasis'
-      }
-    ],
-    evening: [
-      {
-        dualName: '屋形船 ナイトクルーズ (Yakatabune Traditional Houseboat Dinner)',
-        category: 'Dinner Cruise Experience',
-        desc: 'Glide under lantern-lit bridges enjoying unlimited freshly fried tempura and panoramic night views.',
-        cost: 110,
-        weatherBadge: '🌆 River Evening Panorama'
-      },
-      {
-        dualName: '浅草ホッピー通り (Hoppy Street Lantern Alleys)',
-        category: 'Retro Izakaya & Stew',
-        desc: 'Open-air lively alley with family-run taverns famous for slow-simmered beef tendon stew (gyusuji nikomi).',
-        cost: 40,
-        weatherBadge: '🌆 Outdoor Lantern Atmosphere'
-      }
-    ]
-  };
-
-  function renderSwapAlternates(dayIdx, slot) {
-    const container = document.getElementById('swapAlternatesContainer');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const alternates = ALTERNATES_CATALOG[slot] || ALTERNATES_CATALOG.morning;
-    alternates.forEach(alt => {
-      const item = document.createElement('div');
-      item.className = 'alternate-item-card';
-      item.innerHTML = `
-        <div class="alternate-info">
-          <strong>${alt.dualName}</strong>
-          <span>${alt.category} • ${alt.weatherBadge} • 💵 ${formatMoney(alt.cost)}</span>
+    container.innerHTML = `
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="panel-title">${t('customizeHeaderTitle')}</h2>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('customizeHeaderSubtitle')}</p>
         </div>
-        <button type="button" class="btn btn-primary btn-sm btn-select-alt">
-          ${t('btnSelectThis')}
-        </button>
-      `;
+      </div>
+      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.08);">
+        <h3 style="margin-top: 0;">${t('paceControlTitle')}</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem;">${t('paceControlSubtitle')}</p>
+        <button class="btn btn-primary" id="btnApplyPace" style="margin-top: 1.25rem; padding: 8px 20px;">${t('btnApplyPace')}</button>
+      </div>
+    `;
 
-      item.querySelector('.btn-select-alt').addEventListener('click', () => {
-        const trip = getCurrentTrip();
-        if (trip.days[dayIdx]) {
-          trip.days[dayIdx][slot] = {
-            dualName: alt.dualName,
-            category: alt.category,
-            time: trip.days[dayIdx][slot].time || '14:00 - 16:30',
-            desc: alt.desc,
-            weatherBadge: alt.weatherBadge,
-            accessibility: ['👶 Stroller-Friendly', '♿ Accessible'],
-            cost: alt.cost,
-            completed: false
-          };
-          renderItinerary();
-          showToast(`✓ Swapped into Day ${trip.days[dayIdx].dayNumber} (${slot}): ${alt.dualName}`);
-        }
+    const btnApplyPace = container.querySelector('#btnApplyPace');
+    if (btnApplyPace) {
+      btnApplyPace.addEventListener('click', () => {
+        showToast('Pace applied successfully!');
+        saveTripToSupabase(trip);
+        renderItinerary();
       });
-
-      container.appendChild(item);
-    });
+    }
   }
 
   function renderPacking() {
-    const trip = getCurrentTrip();
-    const container = document.getElementById('packingCardsGrid');
+    const container = document.getElementById('packing');
     if (!container) return;
-    container.innerHTML = '';
-
-    let totalItems = 0;
-    let checkedItems = 0;
-
-    (trip.packing || []).forEach(cat => {
-      const card = document.createElement('div');
-      card.className = 'packing-category-card';
-
-      const itemsHtml = cat.items.map((item, idx) => {
-        totalItems++;
-        if (item.checked) checkedItems++;
-        return `
-          <label class="packing-item-row ${item.checked ? 'checked' : ''}" data-cat="${cat.category}" data-idx="${idx}">
-            <input type="checkbox" class="packing-checkbox" ${item.checked ? 'checked' : ''}>
-            <span class="packing-item-label">${item.text}</span>
-          </label>
-        `;
-      }).join('');
-
-      card.innerHTML = `
-        <div class="packing-category-header">
-          <span class="packing-icon">${cat.icon}</span>
-          <h3 class="card-title" style="margin-bottom:0;">${cat.category}</h3>
-        </div>
-        <div class="packing-items-list">${itemsHtml}</div>
-      `;
-
-      card.querySelectorAll('.packing-item-row').forEach(row => {
-        const chk = row.querySelector('.packing-checkbox');
-        chk.addEventListener('change', (e) => {
-          const catName = row.getAttribute('data-cat');
-          const idx = parseInt(row.getAttribute('data-idx'), 10);
-          const c = trip.packing.find(p => p.category === catName);
-          if (c && c.items[idx]) {
-            c.items[idx].checked = e.target.checked;
-            row.classList.toggle('checked', e.target.checked);
-            updatePackingProgress();
-          }
-        });
-      });
-
-      container.appendChild(card);
-    });
-
-    updatePackingProgress(totalItems, checkedItems);
-  }
-
-  function updatePackingProgress(tot, chk) {
     const trip = getCurrentTrip();
-    let total = 0;
-    let checked = 0;
+    const items = trip.packingList || [];
 
-    (trip.packing || []).forEach(c => {
-      c.items.forEach(i => {
-        total++;
-        if (i.checked) checked++;
+    container.innerHTML = `
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="panel-title">${t('packingHeaderTitle')}</h2>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('packingHeaderSubtitle')}</p>
+        </div>
+      </div>
+      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${items.map((p, idx) => `
+            <li style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: ${p.checked ? '#94a3b8' : '#f8fafc'};">
+                <input type="checkbox" class="packing-chk" data-idx="${idx}" ${p.checked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+                <span>${p.item}</span>
+              </label>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+
+    container.querySelectorAll('.packing-chk').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+        if (items[idx]) {
+          items[idx].checked = e.target.checked;
+          renderPacking();
+          saveTripToSupabase(trip);
+        }
       });
     });
-
-    const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
-    const countText = document.getElementById('packingCountText');
-    const pctText = document.getElementById('packingPctText');
-    const bar = document.getElementById('packingProgressBar');
-
-    if (countText) countText.textContent = `${checked} / ${total}`;
-    if (pctText) pctText.textContent = `${pct}%`;
-    if (bar) bar.style.width = `${pct}%`;
   }
 
-  // ==========================================================================
-  // 5. Trip Generator Engine ("Plan New Trip" Modal Form)
-  // ==========================================================================
-  function generateCustomTrip(formData) {
-    const dest = formData.destination.trim();
-    const duration = parseInt(formData.duration, 10) || 5;
-    const adults = parseInt(formData.adults, 10) || 2;
-    const children = parseInt(formData.children, 10) || 0;
-    const seniors = parseInt(formData.seniors, 10) || 0;
-    const totalTravelers = adults + children + seniors;
-    const tripType = formData.tripType || 'Family Vacation';
-    const budgetPref = formData.budgetPref || 'moderate';
-
-    // Daily budget multiplier
-    let dailyRatePerPerson = budgetPref === 'luxury' ? 450 : (budgetPref === 'budget' ? 75 : 160);
-    let lodgingRateNight = budgetPref === 'luxury' ? 520 : (budgetPref === 'budget' ? 85 : 220);
-
-    const totalCost = (dailyRatePerPerson * totalTravelers * duration) + (lodgingRateNight * duration);
-
-    // Weather & Image assignment
-    let heroImg = 'assets/hero-tokyo.jpg';
-    let destImg = 'assets/dest-tokyo.jpg';
-    if (dest.toLowerCase().includes('paris') || dest.toLowerCase().includes('france')) {
-      heroImg = 'assets/hero-paris.jpg';
-      destImg = 'assets/dest-paris.jpg';
-    } else if (dest.toLowerCase().includes('amalfi') || dest.toLowerCase().includes('italy') || dest.toLowerCase().includes('rome')) {
-      heroImg = 'assets/dest-amalfi.jpg';
-      destImg = 'assets/dest-amalfi.jpg';
-    } else if (dest.toLowerCase().includes('swiss') || dest.toLowerCase().includes('zermatt') || dest.toLowerCase().includes('alps')) {
-      heroImg = 'assets/dest-swiss.jpg';
-      destImg = 'assets/dest-swiss.jpg';
-    } else if (dest.toLowerCase().includes('bali') || dest.toLowerCase().includes('indonesia') || dest.toLowerCase().includes('tropical')) {
-      heroImg = 'assets/dest-bali.jpg';
-      destImg = 'assets/dest-bali.jpg';
-    }
-
-    // Generate days
-    const generatedDays = [];
-    const neighborhoodsList = [
-      'Historic Old Town & Central Square',
-      'Artisan Riverside & Waterfront Promenade',
-      'Cultural Hilltop & Royal Heritage',
-      'Garden District & Museum Avenue',
-      'Atmospheric Market Quarters & Panoramic Heights'
-    ];
-
-    for (let i = 1; i <= duration; i++) {
-      const nIndex = (i - 1) % neighborhoodsList.length;
-      const nName = neighborhoodsList[nIndex];
-
-      generatedDays.push({
-        dayNumber: i,
-        dateLabel: `Day ${i}`,
-        neighborhood: `${nName}, ${dest}`,
-        weatherPlan: `☀️ Cooler Morning: Outdoor discovery • 🏛️ Midday Peak: Climate-controlled indoor sights • 🌆 Sunset: Scenic open-air walk.`,
-        morning: {
-          dualName: `Historic Landmark & Heritage Walk (${dest})`,
-          category: 'Culture & Sightseeing',
-          time: '09:30 - 12:00',
-          desc: `Begin your morning exploring signature architecture and vibrant pedestrian avenues in ${nName}.`,
-          weatherBadge: '☀️ Cooler Morning Outdoor',
-          accessibility: children > 0 ? ['👶 Stroller-Friendly', '👨‍👩‍👧 Great for Kids'] : ['♿ Wheelchair Accessible', '👴 Senior Friendly'],
-          cost: 15 * totalTravelers,
-          completed: false
-        },
-        lunch: {
-          dualName: `Authentic Local Kitchen (${dest} Specialties)`,
-          category: 'Local Food Pick',
-          time: '12:30 - 14:00',
-          desc: `Sample traditional seasonal dishes and family-style culinary traditions prepared with regional ingredients.`,
-          weatherBadge: '❄️ Air-Conditioned Dining',
-          accessibility: ['👨‍👩‍👧 Family Seating', '🥗 Dietary Options Available'],
-          cost: 25 * totalTravelers,
-          completed: false
-        },
-        afternoon: {
-          dualName: `Artisan Gallery & Science Discovery (${dest})`,
-          category: 'Museum & Discovery',
-          time: '14:30 - 17:00',
-          desc: `Discover world-class galleries, local craftsmanship, and panoramic city lookouts.`,
-          weatherBadge: '🏛️ Midday Indoor Comfort',
-          accessibility: ['♿ Universal Access Elevators', '👶 Rest Areas & Facilities'],
-          cost: 20 * totalTravelers,
-          completed: false
-        },
-        evening: {
-          dualName: `Sunset Promenade & Dinner (${nName})`,
-          category: 'Scenic Evening & Dining',
-          time: '18:00 - 20:30',
-          desc: `Relax with a peaceful evening walk through illuminated plazas, concluding with an authentic dinner.`,
-          weatherBadge: '🌆 Evening Golden Hour',
-          accessibility: ['👶 Smooth Paved Avenues', '🍷 Relaxed Dining Atmosphere'],
-          cost: 35 * totalTravelers,
-          completed: false
-        }
-      });
-    }
-
-    const newTrip = {
-      id: `trip-${Date.now()}`,
-      destination: dest,
-      country: dest.includes(',') ? dest.split(',')[1].trim() : dest,
-      heroImage: heroImg,
-      title: `${dest} Tailored Journey`,
-      subtitle: `Curated ${tripType.toLowerCase()} designed for ${totalTravelers} travelers with weather adaptation and neighborhood clustering.`,
-      tripType: tripType,
-      durationDays: duration,
-      travelers: {
-        total: totalTravelers,
-        adults: adults,
-        children: children,
-        seniors: seniors,
-        summary: `${totalTravelers} Travelers (${adults} Adults${children ? `, ${children} Kids` : ''}${seniors ? `, ${seniors} Seniors` : ''})`
-      },
-      budgetTier: budgetPref,
-      weather: {
-        temp: '22°C',
-        condition: 'Sunny & Pleasant',
-        icon: '☀️',
-        notes: 'Weather Optimized: Outdoor visits organized for cooler morning and late afternoon slots.'
-      },
-      currentPace: 'balanced',
-      stays: [
-        {
-          id: `stay-${Date.now()}`,
-          name: `${dest} Grand Heritage Residence`,
-          type: 'Boutique Hotel & Suites',
-          neighborhood: neighborhoodsList[0],
-          image: destImg,
-          rating: '4.91',
-          pricePerNight: lodgingRateNight,
-          fitBanner: `✓ Accommodates ${totalTravelers} Guests (${tripType} Configuration)`,
-          features: ['👶 Stroller-Friendly', '♿ Level Entry & Elevators', '📍 Central Walkable Location', '🥐 Breakfast Included'],
-          bookingUrl: '#',
-          description: `Centrally positioned boutique accommodation in ${dest} offering spacious interconnected suites and personalized concierge.`
-        }
-      ],
-      days: generatedDays,
-      budgetBreakdown: {
-        totalTripCost: totalCost,
-        dailyAverage: Math.round(totalCost / duration),
-        perPersonTotal: Math.round(totalCost / totalTravelers),
-        lodgingTotal: lodgingRateNight * duration,
-        diningTotal: Math.round(totalCost * 0.3),
-        ticketsTotal: Math.round(totalCost * 0.15),
-        transitTotal: Math.round(totalCost * 0.08),
-        lodgingPct: 47,
-        diningPct: 30,
-        ticketsPct: 15,
-        transitPct: 8
-      },
-      bookingLinks: [
-        {
-          title: `${dest} All-Inclusive Tourist City Card`,
-          desc: `Combines unlimited public transit with priority admission to top museums and historic monuments.`,
-          icon: '🎟️',
-          actionText: 'Official City Tourism Pass'
-        },
-        {
-          title: 'Direct Airport Express Transit Pass',
-          desc: `Pre-booked seamless high-speed airport link directly to the central district.`,
-          icon: '🚄',
-          actionText: 'Official Railway Transit'
-        }
-      ],
-      packing: [
-        {
-          category: 'Travel Documents & Money',
-          icon: '🛂',
-          items: [
-            { text: 'Passports / National ID cards for all travelers', checked: true },
-            { text: 'Travel health insurance documents', checked: true },
-            { text: 'Local currency cash + debit cards', checked: false }
-          ]
-        },
-        {
-          category: 'Weather & Everyday Comfort',
-          icon: '👟',
-          items: [
-            { text: 'Comfortable broken-in walking shoes', checked: true },
-            { text: 'Lightweight layered clothing & sun protection', checked: false },
-            { text: 'Compact umbrella or light rain shell', checked: false }
-          ]
-        }
-      ]
-    };
-
-    PRESET_TRIPS.unshift(newTrip);
-    currentTripIndex = 0;
-    activeDayIndex = 0;
-
+  function renderAllViews() {
+    populateTripDropdown();
     renderTripHero();
     renderItinerary();
     renderStays();
     renderBudget();
     renderCustomizeConsole();
     renderPacking();
-    switchTab('itinerary');
-
-    showToast(`✓ Generated complete ${duration}-day plan for ${dest}!`);
   }
 
   // ==========================================================================
-  // 6. Navigation & Tab Switching
+  // 7. Initialization & Event Listeners
   // ==========================================================================
-  function switchTab(tabId) {
-    document.querySelectorAll('.app-tab-navigation .tab-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
-    });
+  function initEventListeners() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetTab = e.currentTarget.getAttribute('data-tab');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
 
-    document.querySelectorAll('.tab-content-panel').forEach(panel => {
-      panel.classList.remove('active');
-    });
-
-    const target = document.getElementById(`tabView${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
-    if (target) target.classList.add('active');
-  }
-
-  // ==========================================================================
-  // 7. Toast Notifications
-  // ==========================================================================
-  function showToast(message) {
-    const stack = document.getElementById('toastStack');
-    if (!stack) return;
-
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-
-    stack.appendChild(toast);
-
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(12px)';
-      toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3200);
-  }
-
-  // ==========================================================================
-  // 8. Event Listeners & Initialization
-  // ==========================================================================
-  function init() {
-    // Theme toggle
-    const themeBtn = document.getElementById('themeToggleBtn');
-    if (themeBtn) {
-      const savedTheme = localStorage.getItem('tripcraft_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-
-      themeBtn.addEventListener('click', () => {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('tripcraft_theme', next);
-        showToast(`Theme switched to ${next} mode`);
+        e.currentTarget.classList.add('active');
+        const panel = document.getElementById(targetTab);
+        if (panel) panel.classList.add('active');
       });
-    }
+    });
 
-    // Language select
+    const btnPrint = document.getElementById('btnPrint');
+    if (btnPrint) btnPrint.addEventListener('click', () => window.print());
+
     const langSelect = document.getElementById('langSelect');
     if (langSelect) {
       langSelect.value = currentLang;
-      langSelect.addEventListener('change', (e) => {
-        applyLanguage(e.target.value);
-        showToast(`Language updated to ${e.target.options[e.target.selectedIndex].text}`);
-      });
+      langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
     }
 
-    // Currency select
     const currencySelect = document.getElementById('currencySelect');
-    const currencyBadge = document.getElementById('currencySymbolBadge');
     if (currencySelect) {
       currencySelect.value = currentCurrency;
-      if (currencyBadge && CURRENCIES[currentCurrency]) {
-        currencyBadge.textContent = CURRENCIES[currentCurrency].symbol;
-      }
-
       currencySelect.addEventListener('change', (e) => {
         currentCurrency = e.target.value;
         localStorage.setItem('tripcraft_currency', currentCurrency);
-        if (currencyBadge && CURRENCIES[currentCurrency]) {
-          currencyBadge.textContent = CURRENCIES[currentCurrency].symbol;
-        }
-        renderTripHero();
-        renderItinerary();
-        renderStays();
-        renderBudget();
-        renderCustomizeConsole();
-        showToast(`Currency set to ${currentCurrency}`);
+        renderAllViews();
       });
     }
 
-    // Trip selector
-    const tripSelect = document.getElementById('tripSelect');
-    if (tripSelect) {
-      tripSelect.addEventListener('change', (e) => {
-        currentTripIndex = parseInt(e.target.value, 10) || 0;
-        activeDayIndex = 0;
-        renderTripHero();
-        renderItinerary();
-        renderStays();
-        renderBudget();
-        renderCustomizeConsole();
-        renderPacking();
-      });
-    }
-
-    // Tab buttons
-    document.querySelectorAll('.app-tab-navigation .tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        switchTab(btn.getAttribute('data-tab'));
-      });
-    });
-
-    // Stay filter pills
-    document.querySelectorAll('[data-stay-filter]').forEach(pill => {
-      pill.addEventListener('click', () => {
-        document.querySelectorAll('[data-stay-filter]').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        activeStayFilter = pill.getAttribute('data-stay-filter');
-        renderStays();
-      });
-    });
-
-    // Modal open / close
-    const modalNewTrip = document.getElementById('modalNewTrip');
     const btnNewTrip = document.getElementById('btnNewTrip');
-    const btnCloseNewTripModal = document.getElementById('btnCloseNewTripModal');
-    const btnCancelNewTrip = document.getElementById('btnCancelNewTrip');
-
-    if (btnNewTrip && modalNewTrip) {
+    const newTripModal = document.getElementById('newTripModal');
+    if (btnNewTrip && newTripModal) {
       btnNewTrip.addEventListener('click', () => {
-        modalNewTrip.classList.add('active');
+        newTripModal.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
+        newTripModal.classList.add('active', 'show', 'open');
       });
     }
 
-    if (btnCloseNewTripModal && modalNewTrip) {
-      btnCloseNewTripModal.addEventListener('click', () => {
-        modalNewTrip.classList.remove('active');
-      });
-    }
-
-    if (btnCancelNewTrip && modalNewTrip) {
-      btnCancelNewTrip.addEventListener('click', () => {
-        modalNewTrip.classList.remove('active');
-      });
-    }
-
-    // Close modal on click outside
-    if (modalNewTrip) {
-      modalNewTrip.addEventListener('click', (e) => {
-        if (e.target === modalNewTrip) {
-          modalNewTrip.classList.remove('active');
-        }
-      });
-    }
-
-    // Form submit
-    const formNewTrip = document.getElementById('formNewTrip');
-    if (formNewTrip && modalNewTrip) {
-      formNewTrip.addEventListener('submit', (e) => {
+    const newTripForm = document.getElementById('newTripForm');
+    if (newTripForm) {
+      newTripForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const data = {
-          destination: document.getElementById('inputDestination').value,
-          duration: document.getElementById('inputDuration').value,
-          adults: document.getElementById('inputAdults').value,
-          children: document.getElementById('inputChildren').value,
-          seniors: document.getElementById('inputSeniors').value,
-          tripType: document.getElementById('selectTripType').value,
-          budgetPref: document.getElementById('selectBudgetPref').value,
-          startDate: document.getElementById('inputStartDate').value,
-          specialNotes: document.getElementById('inputSpecialNotes').value
+        const dest = document.getElementById('inputDestination')?.value || 'Custom Voyage';
+        const duration = parseInt(document.getElementById('inputDuration')?.value, 10) || 3;
+        const adults = parseInt(document.getElementById('inputAdults')?.value, 10) || 2;
+        const children = parseInt(document.getElementById('inputChildren')?.value, 10) || 0;
+        const type = document.getElementById('selectTripType')?.value || 'Family Vacation';
+
+        const newTripObj = {
+          id: `trip-custom-${Date.now()}`,
+          destination: dest,
+          country: 'Global',
+          heroImage: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1600&q=80',
+          title: `${dest} Expedition`,
+          subtitle: `Custom tailored ${duration}-day journey focusing on ${type.toLowerCase()}.`,
+          tripType: type,
+          durationDays: duration,
+          travelers: {
+            total: adults + children,
+            adults: adults,
+            children: children,
+            summary: `${adults + children} Travelers (${adults} Adults, ${children} Kids)`
+          },
+          budgetTier: 'moderate',
+          pace: 'balanced',
+          weather: { temp: '22°C', condition: 'Pleasant', icon: '☀️', notes: 'Optimized schedule.' },
+          stays: [
+            {
+              id: `stay-${Date.now()}`,
+              name: `Central Suite ${dest.split(',')[0]}`,
+              type: 'Boutique Stay',
+              neighborhood: 'City Center',
+              rating: '4.88',
+              pricePerNight: 180,
+              category: 'central',
+              fitBanner: '✓ Recommended match for your group',
+              features: ['📍 Central Access', '👨‍👩‍👧 Family Preferred'],
+              bookingUrl: '#',
+              description: 'Comfortable accommodation close to public transit and major city sights.'
+            }
+          ],
+          days: Array.from({ length: duration }, (_, i) => ({
+            dayNumber: i + 1,
+            dateLabel: `Day ${i + 1}`,
+            neighborhood: `${dest.split(',')[0]} Highlight District`,
+            weatherPlan: '☀️ Weather-optimized for walking and exploration.',
+            morning: { dualName: 'Morning Exploration', category: 'Sightseeing', time: '09:00 - 12:00', desc: 'Visit main city attractions.', weatherBadge: '☀️ Optimal Weather', cost: 20, completed: false },
+            lunch: { dualName: 'Local Lunch', category: 'Dining', time: '12:30 - 13:30', desc: 'Sample local cuisine.', weatherBadge: '🍽️ Indoor', cost: 25, completed: false },
+            afternoon: { dualName: 'Cultural Immersion', category: 'Culture', time: '14:00 - 17:00', desc: 'Museums and galleries.', weatherBadge: '🏛️ Indoor/Outdoor', cost: 15, completed: false },
+            evening: { dualName: 'Evening Entertainment', category: 'Leisure', time: '18:30 - 21:00', desc: 'Dinner and stroll.', weatherBadge: '🌆 Cool Breeze', cost: 40, completed: false }
+          })),
+          packingList: [
+            { id: 'c1', item: 'Travel Documents & ID', checked: false, category: 'Essentials' },
+            { id: 'c2', item: 'Comfortable walking shoes', checked: false, category: 'Footwear' }
+          ],
+          budgetBreakdown: {
+            totalTripCost: duration * 150 * (adults + children),
+            dailyAverage: 150 * (adults + children),
+            perPersonTotal: duration * 150,
+            lodgingTotal: duration * 80 * adults,
+            diningTotal: duration * 40 * (adults + children),
+            ticketsTotal: duration * 20 * (adults + children),
+            transitTotal: duration * 10 * (adults + children)
+          }
         };
 
-        generateCustomTrip(data);
-        modalNewTrip.classList.remove('active');
-        formNewTrip.reset();
-      });
-    }
+        PRESET_TRIPS.unshift(newTripObj);
+        currentTripIndex = 0;
+        renderAllViews();
+        saveTripToSupabase(newTripObj);
 
-    // Footer & header shortcut buttons
-    const btnAdjustPaceHeader = document.getElementById('btnAdjustPaceHeader');
-    if (btnAdjustPaceHeader) {
-      btnAdjustPaceHeader.addEventListener('click', () => {
-        switchTab('customize');
-        const paceCard = document.querySelector('.pace-selector-card');
-        if (paceCard) paceCard.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    const btnPrintItinerary = document.getElementById('btnPrintItinerary');
-    if (btnPrintItinerary) {
-      btnPrintItinerary.addEventListener('click', () => {
-        window.print();
-      });
-    }
-
-    const btnQuickSwapActivity = document.getElementById('btnQuickSwapActivity');
-    if (btnQuickSwapActivity) {
-      btnQuickSwapActivity.addEventListener('click', () => {
-        switchTab('customize');
-        const swapConsole = document.querySelector('.swap-console-card');
-        if (swapConsole) swapConsole.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    const btnQuickSwapDining = document.getElementById('btnQuickSwapDining');
-    if (btnQuickSwapDining) {
-      btnQuickSwapDining.addEventListener('click', () => {
-        switchTab('customize');
-        const swapSlotSelect = document.getElementById('swapSlotSelect');
-        if (swapSlotSelect) {
-          swapSlotSelect.value = 'lunch';
-          renderSwapAlternates(activeDayIndex, 'lunch');
+        if (newTripModal) {
+          newTripModal.classList.remove('active', 'show', 'open', 'visible', 'is-open');
+          newTripModal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
         }
-        const swapConsole = document.querySelector('.swap-console-card');
-        if (swapConsole) swapConsole.scrollIntoView({ behavior: 'smooth' });
+        newTripForm.reset();
+        showToast('New trip generated successfully!');
       });
     }
-
-    const btnQuickAdjustPace = document.getElementById('btnQuickAdjustPace');
-    if (btnQuickAdjustPace) {
-      btnQuickAdjustPace.addEventListener('click', () => {
-        switchTab('customize');
-      });
-    }
-
-    const btnQuickBookingGuide = document.getElementById('btnQuickBookingGuide');
-    if (btnQuickBookingGuide) {
-      btnQuickBookingGuide.addEventListener('click', () => {
-        switchTab('customize');
-        const bookingSection = document.querySelector('.booking-guidance-section');
-        if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    // Pace selector radios
-    document.querySelectorAll('input[name="tripPace"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        document.querySelectorAll('.pace-option-card').forEach(c => c.classList.remove('active'));
-        e.target.closest('.pace-option-card').classList.add('active');
-      });
-    });
-
-    const btnApplyPace = document.getElementById('btnApplyPace');
-    if (btnApplyPace) {
-      btnApplyPace.addEventListener('click', () => {
-        const checkedPace = document.querySelector('input[name="tripPace"]:checked');
-        const paceVal = checkedPace ? checkedPace.value : 'balanced';
-        const trip = getCurrentTrip();
-        trip.currentPace = paceVal;
-        showToast(`✓ Applied ${paceVal.toUpperCase()} pace to your daily itinerary!`);
-        switchTab('itinerary');
-      });
-    }
-
-    // Customize slot selectors
-    const swapDaySelect = document.getElementById('swapDaySelect');
-    const swapSlotSelect = document.getElementById('swapSlotSelect');
-    if (swapDaySelect) {
-      swapDaySelect.addEventListener('change', (e) => {
-        const dayIdx = parseInt(e.target.value, 10);
-        const slot = swapSlotSelect ? swapSlotSelect.value : 'morning';
-        renderSwapAlternates(dayIdx, slot);
-      });
-    }
-    if (swapSlotSelect) {
-      swapSlotSelect.addEventListener('change', (e) => {
-        const dayIdx = swapDaySelect ? parseInt(swapDaySelect.value, 10) : activeDayIndex;
-        renderSwapAlternates(dayIdx, e.target.value);
-      });
-    }
-
-    // Initial render
-    applyLanguage(currentLang);
   }
 
-  // Boot on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => {
+      initEventListeners();
+      renderAllViews();
+    });
   } else {
-    init();
+    initEventListeners();
+    renderAllViews();
   }
-
 })();

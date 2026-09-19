@@ -1079,6 +1079,7 @@ img {
   height: 200px;
   position: relative;
   overflow: hidden;
+  background: var(--bg-surface-elevated);
 }
 
 .stay-image-wrap img {
@@ -1308,12 +1309,6 @@ img {
   margin-bottom: 0.85rem;
 }
 
-.card-subtitle {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  margin-bottom: 1.25rem;
-}
-
 .table-responsive {
   overflow-x: auto;
 }
@@ -1347,85 +1342,8 @@ img {
 }
 
 /* --------------------------------------------------------------------------
-   10. Tab 4: Customize Studio
+   10. Form Controls
    -------------------------------------------------------------------------- */
-.customization-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-@media (max-width: 900px) {
-  .customization-columns {
-    grid-template-columns: 1fr;
-  }
-}
-
-.pace-selector-card, .swap-console-card {
-  background: var(--bg-surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.75rem;
-  backdrop-filter: blur(16px);
-}
-
-.pace-options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  margin-bottom: 1.5rem;
-}
-
-.pace-option-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.15rem;
-  cursor: pointer;
-  transition: all var(--trans-fast);
-}
-
-.pace-option-card input[type="radio"] {
-  margin-top: 0.25rem;
-  accent-color: var(--brand-primary);
-}
-
-.pace-option-card:hover, .pace-option-card.active {
-  border-color: var(--brand-primary);
-  background: rgba(99, 102, 241, 0.06);
-}
-
-.pace-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
-
-.pace-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.pace-tag {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--border-subtle);
-  padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-pill);
-}
-
-.pace-description {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
 .form-group {
   margin-bottom: 1.15rem;
 }
@@ -1453,188 +1371,8 @@ img {
   border-color: var(--border-focus);
 }
 
-.alternates-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.alternate-item-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
-  gap: 1rem;
-}
-
-.alternate-info strong {
-  display: block;
-  font-size: 0.92rem;
-  color: var(--text-primary);
-}
-
-.alternate-info span {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-/* Booking Guidance Links */
-.booking-guidance-section {
-  background: var(--bg-surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.75rem;
-  backdrop-filter: blur(16px);
-}
-
-.booking-links-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
-  margin-top: 1rem;
-}
-
-.booking-link-card {
-  display: flex;
-  gap: 1rem;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 1.15rem;
-  align-items: center;
-  transition: all var(--trans-fast);
-}
-
-.booking-link-card:hover {
-  border-color: var(--brand-primary);
-  transform: translateY(-2px);
-}
-
-.booking-icon {
-  font-size: 1.75rem;
-  flex-shrink: 0;
-}
-
-.booking-info h4 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.15rem;
-}
-
-.booking-info p {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-bottom: 0.45rem;
-}
-
-.booking-link-action {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--accent-cyan);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
 /* --------------------------------------------------------------------------
-   11. Tab 5: Packing Checklist
-   -------------------------------------------------------------------------- */
-.packing-progress-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.packing-pct-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.progress-bar-wrapper {
-  width: 220px;
-  height: 10px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-surface-elevated);
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--gradient-brand);
-  transition: width var(--trans-base);
-}
-
-.packing-sections-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.packing-category-card {
-  background: var(--bg-surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  backdrop-filter: blur(16px);
-}
-
-.packing-category-header {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 1rem;
-}
-
-.packing-icon {
-  font-size: 1.35rem;
-}
-
-.packing-items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.packing-item-row {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.45rem 0.5rem;
-  border-radius: var(--radius-sm);
-  transition: background var(--trans-fast);
-}
-
-.packing-item-row:hover {
-  background: var(--bg-surface-elevated);
-}
-
-.packing-checkbox {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--brand-primary);
-  cursor: pointer;
-}
-
-.packing-item-label {
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.packing-item-row.checked .packing-item-label {
-  text-decoration: line-through;
-  color: var(--text-muted);
-}
-
-/* --------------------------------------------------------------------------
-   12. Modal Dialog
+   11. Modal Dialog & Overlay
    -------------------------------------------------------------------------- */
 .modal-backdrop {
   position: fixed;
@@ -1742,7 +1480,7 @@ img {
 }
 
 /* --------------------------------------------------------------------------
-   13. Toast Stack
+   12. Toast Stack
    -------------------------------------------------------------------------- */
 .toast-stack {
   position: fixed;
@@ -1782,7 +1520,7 @@ img {
 }
 
 /* --------------------------------------------------------------------------
-   14. Footer
+   13. Footer
    -------------------------------------------------------------------------- */
 .app-footer {
   border-top: 1px solid var(--border-subtle);
@@ -1807,12 +1545,8 @@ img {
   color: var(--text-primary);
 }
 
-.footer-meta {
-  color: var(--text-muted);
-}
-
 /* --------------------------------------------------------------------------
-   15. Responsive Tweaks
+   14. Responsive Tweaks
    -------------------------------------------------------------------------- */
 @media (max-width: 900px) {
   .navbar {

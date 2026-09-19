@@ -65,6 +65,52 @@
           <span data-i18n="navNewTrip">Plan New Trip</span>
         </button>
 
+        <!-- Auth Navigation Controls -->
+        <div class="auth-nav-container" style="display: flex; align-items: center; gap: 0.5rem;">
+          
+          <!-- Logged Out State (Visible by default) -->
+          <div id="authNavGroup" style="display: flex; gap: 0.5rem;">
+            <button id="btnLoginModal" class="btn btn-primary" type="button">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              <span data-i18n="btnLogin">Login</span>
+            </button>
+            
+            <button id="btnRegisterModal" class="btn btn-primary" type="button">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="20" y1="8" x2="20" y2="14" />
+                <line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              <span data-i18n="btnRegister">Register</span>
+            </button>
+          </div>
+
+          <!-- Logged In State (Hidden by default) -->
+          <div id="userNavGroup" style="display: none; align-items: center; gap: 0.75rem;">
+            <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
+              <div id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                A
+              </div>
+              <span id="userNameDisplay" style="font-weight: 500; font-size: 0.9rem;">User</span>
+            </div>
+            
+            <button id="btnLogout" class="btn btn-secondary" type="button" style="padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span data-i18n="btnLogout">Logout</span>
+            </button>
+          </div>
+
+        </div>
+
         <!-- Language Selector -->
         <div class="dropdown-control">
           <label for="langSelect" class="sr-only">Language</label>
@@ -621,7 +667,7 @@
 
   </div>
 
-  <!-- ================= MODAL: PLAN A NEW TRIP ================= -->
+  <!-- ================= MODAL 1: PLAN A NEW TRIP ================= -->
   <div class="modal-backdrop" id="modalNewTrip" role="dialog" aria-modal="true" aria-labelledby="modalNewTripTitle">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -635,8 +681,7 @@
           <h2 class="modal-title" id="modalNewTripTitle" data-i18n="modalNewTripTitle">Plan a New Personalized Journey
           </h2>
         </div>
-        <button class="modal-close-btn" id="btnCloseNewTripModal" type="button"
-          aria-label="Close modal">&times;</button>
+        <button class="modal-close-btn" id="btnCloseNewTripModal" type="button" aria-label="Close modal" data-close-modal>&times;</button>
       </div>
 
       <form id="formNewTrip" class="modal-body-form">
@@ -715,7 +760,7 @@
         </div>
 
         <div class="modal-footer-actions">
-          <button type="button" class="btn btn-secondary" id="btnCancelNewTrip" data-i18n="btnCancel">Cancel</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelNewTrip" data-i18n="btnCancel" data-close-modal>Cancel</button>
           <button type="submit" class="btn btn-primary" id="btnGenerateTripSubmit">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -727,10 +772,90 @@
     </div>
   </div>
 
+  <!-- ================= MODAL 2: LOGIN ================= -->
+  <div id="loginModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="btnLogin">Login</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
+      </div>
+      <form id="loginForm" class="modal-body-form">
+        <div class="form-group">
+          <label for="loginEmail" class="form-label">Email or Username</label>
+          <input type="email" id="loginEmail" name="email" class="form-input" placeholder="name@example.com" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword" class="form-label">Password</label>
+          <input type="password" id="loginPassword" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnLogin">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 3: REGISTER ================= -->
+  <div id="registerModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="btnRegister">Register</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
+      </div>
+      <form id="registerForm" class="modal-body-form">
+        <div class="form-group">
+          <label for="registerName" class="form-label">Full Name</label>
+          <input type="text" id="registerName" name="fullName" class="form-input" placeholder="Ahmed Ali" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="registerEmail" class="form-label">Email Address</label>
+          <input type="email" id="registerEmail" name="email" class="form-input" placeholder="name@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="registerPassword" class="form-label">Password</label>
+          <input type="password" id="registerPassword" name="password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnRegister">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
-  <!-- Scripts -->
+  <!-- Modal Open/Close Toggle Handlers -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginBtn = document.getElementById('btnLoginModal');
+      const registerBtn = document.getElementById('btnRegisterModal');
+      const loginModal = document.getElementById('loginModal');
+      const registerModal = document.getElementById('registerModal');
+
+      if (loginBtn && loginModal) {
+        loginBtn.addEventListener('click', () => loginModal.classList.add('active'));
+      }
+
+      if (registerBtn && registerModal) {
+        registerBtn.addEventListener('click', () => registerModal.classList.add('active'));
+      }
+
+      // Universal close button handler
+      document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.closest('.modal-backdrop')?.classList.remove('active');
+        });
+      });
+    });
+  </script>
+
+  <!-- External Libraries & Application Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="auth.js"></script>
   <script src="app.js"></script>
 </body>
 

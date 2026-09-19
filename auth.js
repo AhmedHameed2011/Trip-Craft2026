@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnLoginModal = document.getElementById('btnLoginModal');
   const btnRegisterModal = document.getElementById('btnRegisterModal');
+  const btnNewTrip = document.getElementById('btnNewTrip');
   
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnLoginModal) btnLoginModal.addEventListener('click', () => openModal(loginModal));
   if (btnRegisterModal) btnRegisterModal.addEventListener('click', () => openModal(registerModal));
+if (btnNewTrip) {btnNewTrip.addEventListener('click', () => openModal(newTripModal));}
 
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {

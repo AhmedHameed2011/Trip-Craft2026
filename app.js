@@ -1378,24 +1378,46 @@
       });
     }
 
+    // Modal & New Trip Form Handler
     const btnNewTrip = document.getElementById('btnNewTrip');
-    const newTripModal = document.getElementById('newTripModal');
-    if (btnNewTrip && newTripModal) {
+    const modalNewTrip = document.getElementById('modalNewTrip') || document.getElementById('newTripModal');
+    const formNewTrip = document.getElementById('formNewTrip') || document.getElementById('newTripForm');
+
+    // Open Modal Trigger
+    if (btnNewTrip && modalNewTrip) {
       btnNewTrip.addEventListener('click', () => {
-        newTripModal.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
-        newTripModal.classList.add('active', 'show', 'open');
+        modalNewTrip.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
+        modalNewTrip.classList.add('active', 'show', 'open');
       });
     }
 
-    const newTripForm = document.getElementById('newTripForm');
-    if (newTripForm) {
-      newTripForm.addEventListener('submit', (e) => {
+    // Modal Close Triggers
+    if (modalNewTrip) {
+      const closeButtons = modalNewTrip.querySelectorAll('[data-close-modal], .btn-close, .close-modal');
+      closeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          modalNewTrip.classList.remove('active', 'show', 'open', 'visible', 'is-open');
+          modalNewTrip.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
+        });
+      });
+    }
+
+    // Form Submission Handler
+    if (formNewTrip) {
+      formNewTrip.addEventListener('submit', (e) => {
         e.preventDefault();
-        const dest = document.getElementById('inputDestination')?.value || 'Custom Voyage';
-        const duration = parseInt(document.getElementById('inputDuration')?.value, 10) || 3;
-        const adults = parseInt(document.getElementById('inputAdults')?.value, 10) || 2;
-        const children = parseInt(document.getElementById('inputChildren')?.value, 10) || 0;
-        const type = document.getElementById('selectTripType')?.value || 'Family Vacation';
+
+        const inputDestination = document.getElementById('inputDestination');
+        const inputDuration = document.getElementById('inputDuration');
+        const selectTripType = document.getElementById('selectTripType');
+        const inputAdults = document.getElementById('inputAdults');
+        const inputChildren = document.getElementById('inputChildren');
+
+        const dest = inputDestination?.value.trim() || 'Custom Voyage';
+        const duration = parseInt(inputDuration?.value, 10) || 3;
+        const adults = parseInt(inputAdults?.value, 10) || 2;
+        const children = parseInt(inputChildren?.value, 10) || 0;
+        const type = selectTripType?.value || 'Family Vacation';
 
         const newTripObj = {
           id: `trip-custom-${Date.now()}`,
@@ -1460,11 +1482,11 @@
         renderAllViews();
         saveTripToSupabase(newTripObj);
 
-        if (newTripModal) {
-          newTripModal.classList.remove('active', 'show', 'open', 'visible', 'is-open');
-          newTripModal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
+        if (modalNewTrip) {
+          modalNewTrip.classList.remove('active', 'show', 'open', 'visible', 'is-open');
+          modalNewTrip.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
         }
-        newTripForm.reset();
+        formNewTrip.reset();
         showToast('New trip generated successfully!');
       });
     }

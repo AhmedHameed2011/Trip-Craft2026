@@ -8,7 +8,7 @@
   <meta name="description"
     content="TripCraft is a personalized, multilingual travel planner that crafts organized itineraries with weather adaptation, accessibility flags, and local food discovery.">
 
-  <!-- Typography -->
+  <!-- Modern Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -66,7 +66,8 @@
 
         <!-- Auth Navigation Controls -->
         <div class="auth-nav-container" style="display: flex; align-items: center; gap: 0.5rem;">
-          <!-- Logged Out State -->
+          
+          <!-- Logged Out State (Visible by default) -->
           <div id="authNavGroup" style="display: flex; gap: 0.5rem;">
             <button id="btnLoginModal" class="btn btn-primary" type="button">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -88,10 +89,25 @@
             </button>
           </div>
 
-          <!-- Logged In State -->
+          <!-- Logged In State (Hidden by default) -->
           <div id="userNavGroup" style="display: none; align-items: center; gap: 0.75rem;">
-            <!-- Populated via auth.js -->
+            <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
+              <div id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                A
+              </div>
+              <span id="userNameDisplay" style="font-weight: 500; font-size: 0.9rem;">User</span>
+            </div>
+            
+            <button id="btnLogout" class="btn btn-secondary" type="button" style="padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span data-i18n="btnLogout">Logout</span>
+            </button>
           </div>
+
         </div>
 
         <!-- Language Selector -->
@@ -129,7 +145,7 @@
           </div>
         </div>
 
-        <!-- Theme Toggle -->
+        <!-- Dark / Light Theme Toggle -->
         <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Toggle Dark/Light Mode" title="Toggle Theme">
           <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="5" />
@@ -166,7 +182,7 @@
           <h1 class="hero-destination-title" id="heroTitle">Tokyo Neon & Heritage</h1>
           <p class="hero-description" id="heroSubtitle">A personalized voyage balancing vibrant pop-culture districts, historic Shinto shrines, and serene imperial gardens.</p>
 
-          <!-- Metrics Matrix -->
+          <!-- Quick Metrics Matrix -->
           <div class="hero-metrics-grid">
             <div class="metric-card">
               <div class="metric-icon-wrap">
@@ -225,7 +241,7 @@
       </div>
     </section>
 
-    <!-- Navigation Tabs -->
+    <!-- Main Navigation Tabs -->
     <nav class="app-tab-navigation" aria-label="Trip Views">
       <div class="tab-list-container">
         <button class="tab-btn active" data-tab="itinerary" type="button">
@@ -256,9 +272,33 @@
       </div>
     </nav>
 
-    <!-- Content Sections -->
+    <!-- Main Content Area -->
     <main class="main-content">
-      <section id="itinerary" class="tab-content-panel active"></section>
+      <section id="itinerary" class="tab-content-panel active">
+        <!-- Main Days & Period Breakdown Section -->
+        <section class="trip-itinerary-section">
+          <!-- Top Bar: Day Selection Cards Header & Container -->
+          <div class="day-cards-wrapper">
+            <div class="section-header">
+              <h2 class="section-title">Select Day</h2>
+              <span class="section-subtitle">Click a day card to view detailed schedule</span>
+            </div>
+            
+            <!-- Container where day selector cards are dynamically rendered -->
+            <div id="dayCardsContainer" class="day-cards-grid"></div>
+          </div>
+
+          <!-- Bottom Area: Detailed Period Breakdown Cards for the Selected Day -->
+          <div class="period-details-wrapper">
+            <div class="selected-day-banner" id="selectedDayBanner">
+              <!-- Active day title and neighborhood summary will inject here -->
+            </div>
+
+            <!-- Container where the daily period cards (Morning, Lunch, Afternoon, Evening) render -->
+            <div id="periodCardsContainer" class="period-cards-list"></div>
+          </div>
+        </section>
+      </section>
       <section id="stays" class="tab-content-panel"></section>
       <section id="budget" class="tab-content-panel"></section>
     </main>
@@ -280,7 +320,9 @@
   <div id="newTripModal" class="modal-backdrop">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h2 class="modal-title" data-i18n="modalNewTripTitle">Plan a New Personalized Journey</h2>
+        <div class="modal-title-wrap">
+          <h2 class="modal-title" data-i18n="modalNewTripTitle">Plan a New Personalized Journey</h2>
+        </div>
         <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
       </div>
       <form id="newTripForm" class="modal-body-form">
@@ -348,7 +390,7 @@
       </div>
       <form id="loginForm" class="modal-body-form">
         <div class="form-group">
-          <label for="loginEmail" class="form-label">Email Address</label>
+          <label for="loginEmail" class="form-label">Email or Username</label>
           <input type="email" id="loginEmail" name="email" class="form-input" placeholder="name@example.com" required autocomplete="username">
         </div>
         <div class="form-group">
@@ -391,8 +433,60 @@
     </div>
   </div>
 
+  <!-- Day Details Modal -->
+  <div id="dayDetailsModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: var(--bg-overlay, rgba(3, 6, 12, 0.85)); z-index: 9999; justify-content: center; align-items: center; padding: 1.5rem; backdrop-filter: blur(8px);">
+    <div class="modal-card" style="background: var(--bg-surface, #0e1424); border: 1px solid var(--border-medium, rgba(255,255,255,0.15)); border-radius: var(--radius-lg, 20px); width: 100%; max-width: 750px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg, 0 16px 48px rgba(0,0,0,0.55)); color: var(--text-primary, #f8fafc);">
+      
+      <!-- Modal Header -->
+      <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 id="modalDayTitle" style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary, #f8fafc);">Day Details</h3>
+          <p id="modalDaySubtitle" style="font-size: 0.875rem; color: var(--text-secondary, #94a3b8); margin: 0.25rem 0 0 0;">Timeline and period breakdown</p>
+        </div>
+        <button id="btnCloseDayModal" type="button" style="background: transparent; border: none; color: var(--text-secondary, #94a3b8); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0.25rem 0.5rem; border-radius: 6px;">&times;</button>
+      </div>
+
+      <!-- Modal Body / Day Timeline Periods -->
+      <div id="modalDayDetailsBody" style="padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Timeline cards populated dynamically by openDayDetailsModal in app.js -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); display: flex; justify-content: flex-end; background: rgba(0,0,0,0.15);">
+        <button id="btnSecondaryCloseDayModal" type="button" class="btn btn-secondary" style="padding: 8px 18px; border-radius: 8px; cursor: pointer;">Close</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal Open/Close Toggle Handlers -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginBtn = document.getElementById('btnLoginModal');
+      const registerBtn = document.getElementById('btnRegisterModal');
+      const loginModal = document.getElementById('loginModal');
+      const registerModal = document.getElementById('registerModal');
+
+      if (loginBtn && loginModal) {
+        loginBtn.addEventListener('click', () => loginModal.classList.add('active'));
+      }
+
+      if (registerBtn && registerModal) {
+        registerBtn.addEventListener('click', () => registerModal.classList.add('active'));
+      }
+
+      // Universal close button handler
+      document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.closest('.modal-backdrop')?.classList.remove('active');
+        });
+      });
+    });
+  </script>
+
   <!-- External Libraries & Application Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script src="supabase-config.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>

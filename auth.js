@@ -5,7 +5,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const sbClient = window.supabaseClient || window.supabase;
   if (typeof sbClient === 'undefined' || !sbClient) {
-    console.error('❌ Supabase client is not initialized.');
+    console.error('❌ Supabase client is not initialized. Make sure supabase-config.js is loaded before auth.js.');
     return;
   }
 
@@ -13,37 +13,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loginModal = document.getElementById('loginModal');
   const registerModal = document.getElementById('registerModal');
   const newTripModal = document.getElementById('newTripModal');
+  const authModal = document.getElementById('authModal');
 
   const btnLoginModal = document.getElementById('btnLoginModal');
   const btnRegisterModal = document.getElementById('btnRegisterModal');
-  const btnNewTrip = document.getElementById('btnNewTrip');
   
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
 
-  // --- Modal Utilities ---
+  // --- Bulletproof Modal Utilities ---
   function openModal(modal) {
     if (modal) {
       modal.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
-      modal.classList.add('active', 'show');
+      modal.classList.add('active', 'show', 'open');
     }
   }
 
   function closeModal(modal) {
     if (modal) {
-      modal.classList.remove('active', 'show');
+      modal.classList.remove('active', 'show', 'open', 'visible', 'is-open');
       modal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
     }
   }
 
+  // Ensure registration, auth, and login modals remain hidden by default on app boot
+  closeModal(registerModal);
+  closeModal(loginModal);
+  closeModal(authModal);
+  closeModal(newTripModal);
+
   if (btnLoginModal) btnLoginModal.addEventListener('click', () => openModal(loginModal));
   if (btnRegisterModal) btnRegisterModal.addEventListener('click', () => openModal(registerModal));
-  if (btnNewTrip) btnNewTrip.addEventListener('click', () => openModal(newTripModal));
 
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
       closeModal(loginModal);
       closeModal(registerModal);
+      closeModal(authModal);
       closeModal(newTripModal);
     });
   });
@@ -51,19 +57,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('click', (e) => {
     if (e.target === loginModal) closeModal(loginModal);
     if (e.target === registerModal) closeModal(registerModal);
+    if (e.target === authModal) closeModal(authModal);
     if (e.target === newTripModal) closeModal(newTripModal);
   });
 
   // --- UI State Management for Authentication ---
   function updateAuthUI(session) {
-    let authNavGroup = document.getElementById('authNavGroup');
-    let userNavGroup = document.getElementById('userNavGroup');
+    // Smart Element Lookup (Handles missing HTML IDs gracefully)
+    let authNavGroup = document.getElementById('authNavGroup') || document.getElementById('loggedOutGroup');
+    let userNavGroup = document.getElementById('userNavGroup') || document.getElementById('loggedInGroup');
 
-    if (!authNavGroup || !userNavGroup) return;
+    // Fallback 1: If authNavGroup is missing, target the parent container of btnLoginModal
+    if (!authNavGroup && btnLoginModal) {
+      authNavGroup = btnLoginModal.parentElement;
+    }
+
+    // Fallback 2: If userNavGroup is missing in index.html, auto-create it next to authNavGroup
+    if (!userNavGroup && authNavGroup && authNavGroup.parentElement) {
+      userNavGroup = document.createElement('div');
+      userNavGroup.id = 'userNavGroup';
+      userNavGroup.className = 'user-nav-group';
+      authNavGroup.parentElement.appendChild(userNavGroup);
+    }
+
+    if (!authNavGroup || !userNavGroup) {
+      console.warn('⚠️ Unable to find or create navbar container elements.');
+      return;
+    }
 
     if (session && session.user) {
+      console.log('✅ User is authenticated:', session.user.email);
+      
       authNavGroup.style.display = 'none';
       userNavGroup.style.display = 'flex';
+      userNavGroup.style.alignItems = 'center';
+      userNavGroup.style.gap = '0.75rem';
 
       const userEmail = session.user.email;
       const displayName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
@@ -72,9 +100,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.currentUser = {
         id: session.user.id,
         email: userEmail,
-        name: displayName
+        name: displayName,
+        user_metadata: session.user.user_metadata
       };
 
+      // Inject profile badge and logout button dynamically
       userNavGroup.innerHTML = `
         <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
           <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
@@ -82,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <span style="font-weight: 500; font-size: 0.9rem; color: var(--text-primary);">${displayName}</span>
         </div>
-        <button id="btnLogout" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.25rem;">
+        <button id="btnLogout" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
@@ -92,20 +122,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>
       `;
 
+      // Attach click listener to the newly generated Logout button
       const btnLogout = document.getElementById('btnLogout');
       if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
-          await sbClient.auth.signOut();
-          window.currentUser = null;
-          if (typeof window.showToast === 'function') window.showToast('Logged out successfully');
-          setTimeout(() => window.location.reload(), 500);
+          const { error } = await sbClient.auth.signOut();
+          if (error) {
+            console.error('❌ Error signing out:', error.message);
+          } else {
+            localStorage.removeItem('tripcraft_user');
+            window.currentUser = null;
+            if (typeof window.showToast === 'function') {
+              window.showToast('Logged out successfully');
+            }
+            const tripSelect = document.getElementById('tripSelect');
+            if (tripSelect) tripSelect.innerHTML = '<option value="">Select Trip</option>';
+            
+            setTimeout(() => window.location.reload(), 500);
+          }
         });
       }
 
+      // Trigger user trips reload if function exists in app.js
       if (typeof window.loadUserTrips === 'function') {
         window.loadUserTrips(session.user.id);
       }
     } else {
+      // User is logged out
       authNavGroup.style.display = 'flex';
       userNavGroup.style.display = 'none';
       userNavGroup.innerHTML = '';
@@ -113,20 +156,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Initial Session Check
-  try {
-    const { data: { session } } = await sbClient.auth.getSession();
-    updateAuthUI(session);
-  } catch (err) {
-    console.error('Session error:', err.message);
-  }
+  // --- Check Initial Session on Page Load ---
+  const initializeSession = async () => {
+    try {
+      const { data: { session }, error } = await sbClient.auth.getSession();
+      if (error) throw error;
+      updateAuthUI(session);
+    } catch (err) {
+      console.error('❌ Error fetching initial session:', err.message);
+      updateAuthUI(null);
+    }
+  };
+  
+  await initializeSession();
 
-  // Listen for Auth changes
+  // --- Auth State Change Listener ---
   sbClient.auth.onAuthStateChange((event, session) => {
+    console.log('🔔 Auth state changed event:', event);
     updateAuthUI(session);
   });
 
-  // Login Form
+  // --- Handle Login Form Submission ---
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -134,19 +184,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       const password = document.getElementById('loginPassword').value;
 
       try {
-        const { error } = await sbClient.auth.signInWithPassword({ email, password });
+        console.log('🔄 Attempting login for:', email);
+        const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+        
         if (error) throw error;
 
-        if (typeof window.showToast === 'function') window.showToast('Login successful!');
+        console.log('🔑 Login successful!');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Login successful!');
+        }
+        
         closeModal(loginModal);
         loginForm.reset();
       } catch (err) {
-        if (typeof window.showToast === 'function') window.showToast('Login failed: ' + err.message);
+        console.error('❌ Login error:', err.message);
+        if (typeof window.showToast === 'function') {
+          window.showToast('Login failed: ' + err.message, 'error');
+        } else {
+          alert('Login failed: ' + err.message);
+        }
       }
     });
   }
 
-  // Register Form
+  // --- Handle Register Form Submission ---
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -155,18 +216,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       const password = document.getElementById('registerPassword').value;
 
       try {
-        const { error } = await sbClient.auth.signUp({
+        const { data, error } = await sbClient.auth.signUp({
           email,
           password,
           options: { data: { full_name: fullName } }
         });
+
         if (error) throw error;
 
-        if (typeof window.showToast === 'function') window.showToast('Registration successful!');
+        const msg = data?.session ? 'Registration successful! Welcome.' : 'Registration successful! Please check your email to confirm your account.';
+        if (typeof window.showToast === 'function') {
+          window.showToast(msg);
+        } else {
+          alert(msg);
+        }
+
         closeModal(registerModal);
         registerForm.reset();
       } catch (err) {
-        if (typeof window.showToast === 'function') window.showToast('Registration failed: ' + err.message);
+        console.error('❌ Registration error:', err.message);
+        if (typeof window.showToast === 'function') {
+          window.showToast('Registration failed: ' + err.message, 'error');
+        } else {
+          alert('Registration failed: ' + err.message);
+        }
       }
     });
   }
